@@ -3,6 +3,7 @@ import ProtectedRoute from "@/core/auth/ProtectedRoute";
 import LoginPage from "@/core/auth/LoginPage";
 import Shell from "@/core/shell/Shell";
 import { habitsRoutes } from "@/modules/habits/routes";
+import { tasksRoutes } from "@/modules/tasks/routes";
 
 const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
@@ -15,7 +16,7 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="/habits" replace /> },
           ...habitsRoutes,
-          // future module routes are appended here
+          ...tasksRoutes,
         ],
       },
     ],

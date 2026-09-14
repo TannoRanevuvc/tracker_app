@@ -9,4 +9,5 @@ export const navItems: NavItem[] = [
   { label: "Задачи", path: "/tasks", moduleId: "tasks" },
   { label: "Финансы", path: "/finance", moduleId: "finance" },
   { label: "Питание", path: "/food", moduleId: "food" },
+  { label: "Мотивация", path: "/motivation", moduleId: "motivation" },
 ];

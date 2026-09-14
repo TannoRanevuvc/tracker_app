@@ -4,6 +4,8 @@ import LoginPage from "@/core/auth/LoginPage";
 import Shell from "@/core/shell/Shell";
 import { habitsRoutes } from "@/modules/habits/routes";
 import { tasksRoutes } from "@/modules/tasks/routes";
+import { motivationRoutes } from "@/modules/motivation/routes";
+import { financeRoutes } from "@/modules/finance/routes";
 
 const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
@@ -17,6 +19,8 @@ const router = createBrowserRouter([
           { index: true, element: <Navigate to="/habits" replace /> },
           ...habitsRoutes,
           ...tasksRoutes,
+          ...motivationRoutes,
+          ...financeRoutes,
         ],
       },
     ],

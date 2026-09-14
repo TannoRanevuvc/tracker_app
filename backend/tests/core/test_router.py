@@ -214,12 +214,12 @@ class TestModules:
             assert "name" in item
             assert "enabled" in item
 
-    async def test_finance_is_present_and_disabled(self, client: AsyncClient):
-        """specs/core.md §6 — finance.enabled = False."""
+    async def test_finance_is_present_and_enabled(self, client: AsyncClient):
+        """specs/core.md §6 — finance.enabled = True (модуль реализован и подключён)."""
         resp = await client.get(MODULES_URL)
         by_name = {m["name"]: m["enabled"] for m in resp.json()}
         assert "finance" in by_name
-        assert by_name["finance"] is False
+        assert by_name["finance"] is True
 
     async def test_food_is_present_and_disabled(self, client: AsyncClient):
         """specs/core.md §6 — food.enabled = False."""

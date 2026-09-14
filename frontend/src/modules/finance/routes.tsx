@@ -1,4 +1,6 @@
-export const financeRoutes = {
-  path: "/finance",
-  component: () => import("./components/FinancePage"),
-};
+import { RouteObject } from "react-router-dom";
+import FinancePage from "./components/FinancePage";
+
+export const financeRoutes: RouteObject[] = [
+  { path: "/finance", element: <FinancePage /> },
+];

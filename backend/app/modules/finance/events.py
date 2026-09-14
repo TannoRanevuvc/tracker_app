@@ -4,5 +4,5 @@ PUBLISHES = [
 ]
 
 SUBSCRIBES_TO = {
-    "food.meal_logged": "app.modules.finance.service.on_meal_logged",
+    "food.meal_logged": "on_food_meal_logged",
 }

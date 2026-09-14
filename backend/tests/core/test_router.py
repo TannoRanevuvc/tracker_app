@@ -228,9 +228,9 @@ class TestModules:
         assert "food" in by_name
         assert by_name["food"] is False
 
-    async def test_habits_is_present_and_disabled(self, client: AsyncClient):
-        """На этапе core все модули disabled — роутер habits ещё не зарегистрирован."""
+    async def test_habits_is_present_and_enabled(self, client: AsyncClient):
+        """habits зарегистрирован — модуль должен быть enabled."""
         resp = await client.get(MODULES_URL)
         by_name = {m["name"]: m["enabled"] for m in resp.json()}
         assert "habits" in by_name
-        assert by_name["habits"] is False
+        assert by_name["habits"] is True

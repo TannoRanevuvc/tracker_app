@@ -1,3 +1,16 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-brand-gray: #1a1a1a;
+}
+
+@layer base {
+  body {
+    @apply bg-black text-white antialiased font-sans;
+  }
+
+  ::selection {
+    @apply bg-white/30;
+  }
+}

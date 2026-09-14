@@ -1,44 +1,88 @@
+import uuid
 from datetime import date, datetime
+from typing import Optional
+
 from pydantic import BaseModel
 
 
 class ProductCreate(BaseModel):
     name: str
-    calories_per_100g: float
-    protein_per_100g: float
-    fat_per_100g: float
-    carbs_per_100g: float
+    kcal_per_100g: float
+    protein_g_per_100g: float
+    fat_g_per_100g: float
+    carbs_g_per_100g: float
 
 
-class ProductRead(BaseModel):
-    id: int
+class ProductUpdate(BaseModel):
+    name: Optional[str] = None
+    kcal_per_100g: Optional[float] = None
+    protein_g_per_100g: Optional[float] = None
+    fat_g_per_100g: Optional[float] = None
+    carbs_g_per_100g: Optional[float] = None
+
+
+class ProductResponse(BaseModel):
+    id: uuid.UUID
+    user_id: Optional[uuid.UUID]
+    external_id: Optional[str]
     name: str
-    calories_per_100g: float
-    protein_per_100g: float
-    fat_per_100g: float
-    carbs_per_100g: float
+    kcal_per_100g: float
+    protein_g_per_100g: float
+    fat_g_per_100g: float
+    carbs_g_per_100g: float
+    created_at: datetime
 
     model_config = {"from_attributes": True}
 
 
-class MealCreate(BaseModel):
-    product_id: int
-    grams: float
-    eaten_at: datetime
+class MealEntryCreate(BaseModel):
+    product_id: uuid.UUID
+    quantity_g: float
+    meal_type: str  # breakfast | lunch | dinner | snack
+    logged_at: Optional[datetime] = None
+    price_kopecks: Optional[int] = None
 
 
-class MealRead(BaseModel):
-    id: int
-    product_id: int
-    grams: float
-    eaten_at: datetime
+class MealEntryResponse(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    product_id: uuid.UUID
+    quantity_g: float
+    meal_type: str
+    logged_at: datetime
+    price_kopecks: Optional[int]
+    kcal: float
+    protein_g: float
+    fat_g: float
+    carbs_g: float
 
     model_config = {"from_attributes": True}
 
 
-class DailySummary(BaseModel):
-    date: date
-    calories: float
-    protein: float
-    fat: float
-    carbs: float
+class DailyGoalCreate(BaseModel):
+    kcal_goal: int
+    protein_goal_g: Optional[int] = None
+    fat_goal_g: Optional[int] = None
+    carbs_goal_g: Optional[int] = None
+    effective_from: date
+
+
+class DailyGoalResponse(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    kcal_goal: int
+    protein_goal_g: Optional[int]
+    fat_goal_g: Optional[int]
+    carbs_goal_g: Optional[int]
+    effective_from: date
+
+    model_config = {"from_attributes": True}
+
+
+class SummaryResponse(BaseModel):
+    kcal_total: float
+    protein_total: float
+    fat_total: float
+    carbs_total: float
+    kcal_goal: Optional[int]
+    goal_reached: bool

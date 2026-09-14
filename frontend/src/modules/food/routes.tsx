@@ -1,4 +1,6 @@
-export const foodRoutes = {
-  path: "/food",
-  component: () => import("./components/FoodPage"),
-};
+import { RouteObject } from "react-router-dom";
+import FoodPage from "./components/FoodPage";
+
+export const foodRoutes: RouteObject[] = [
+  { path: "/food", element: <FoodPage /> },
+];

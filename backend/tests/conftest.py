@@ -27,10 +27,12 @@ async def create_tables():
         await conn.execute(text("CREATE SCHEMA IF NOT EXISTS tasks"))
         await conn.execute(text("CREATE SCHEMA IF NOT EXISTS motivation"))
         await conn.execute(text("CREATE SCHEMA IF NOT EXISTS finance"))
+        await conn.execute(text("CREATE SCHEMA IF NOT EXISTS food"))
         await conn.run_sync(Base.metadata.create_all)
     yield
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+        await conn.execute(text("DROP SCHEMA IF EXISTS food CASCADE"))
         await conn.execute(text("DROP SCHEMA IF EXISTS finance CASCADE"))
         await conn.execute(text("DROP SCHEMA IF EXISTS motivation CASCADE"))
         await conn.execute(text("DROP SCHEMA IF EXISTS tasks CASCADE"))

@@ -7,10 +7,21 @@ import HabitFormModal from "./HabitFormModal";
 
 const DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
+const APP_TZ = "Asia/Tomsk";
+
 function getTodayAppTz(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tomsk" }).format(
-    new Date()
-  );
+  return new Intl.DateTimeFormat("en-CA", { timeZone: APP_TZ }).format(new Date());
+}
+
+// weekday in backend encoding: 0=Пн .. 6=Вс (ISO weekday − 1)
+function todayWeekdayAppTz(): number {
+  const iso = new Date(getTodayAppTz()).getDay(); // 0=Sun in JS
+  return iso === 0 ? 6 : iso - 1;
+}
+
+function isTodayScheduled(habit: Habit): boolean {
+  if (habit.frequency_type === "daily") return true;
+  return (habit.weekly_days ?? []).includes(todayWeekdayAppTz());
 }
 
 function frequencyLabel(habit: Habit): string {
@@ -48,6 +59,7 @@ export default function HabitCard({ habit }: Props) {
 
   const actionPending =
     checkin.isPending || deleteCheckin.isPending || archive.isPending;
+  const scheduledToday = isTodayScheduled(habit);
 
   return (
     <>
@@ -94,19 +106,25 @@ export default function HabitCard({ habit }: Props) {
         {/* Actions row */}
         {!habit.archived_at && (
           <div className="flex gap-2">
-            {/* Checkin toggle */}
-            <button
-              onClick={handleToggle}
-              disabled={actionPending}
-              className={`flex-1 h-10 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors active:scale-[0.98] disabled:opacity-50 ${
-                habit.done_today
-                  ? "bg-white/10 text-white/60 hover:bg-white/15"
-                  : "bg-white text-black hover:bg-white/90"
-              }`}
-            >
-              {habit.done_today && <Check size={15} />}
-              {habit.done_today ? "Выполнено" : "Отметить"}
-            </button>
+            {/* Checkin toggle — only on scheduled days */}
+            {scheduledToday ? (
+              <button
+                onClick={handleToggle}
+                disabled={actionPending}
+                className={`flex-1 h-10 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors active:scale-[0.98] disabled:opacity-50 ${
+                  habit.done_today
+                    ? "bg-white/10 text-white/60 hover:bg-white/15"
+                    : "bg-white text-black hover:bg-white/90"
+                }`}
+              >
+                {habit.done_today && <Check size={15} />}
+                {habit.done_today ? "Выполнено" : "Отметить"}
+              </button>
+            ) : (
+              <span className="flex-1 h-10 flex items-center px-3 text-sm text-white/25">
+                Не по расписанию
+              </span>
+            )}
 
             {/* Edit */}
             <button

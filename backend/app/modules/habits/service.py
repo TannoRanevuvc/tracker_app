@@ -211,6 +211,8 @@ class HabitService:
             habit.name = name
         if frequency_type is not None:
             habit.frequency_type = frequency_type
+            if frequency_type == "daily":
+                habit.weekly_days = None
         if weekly_days is not None:
             habit.weekly_days = weekly_days
         return await self._save_and_stats(habit)

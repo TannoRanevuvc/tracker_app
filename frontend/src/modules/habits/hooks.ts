@@ -1,10 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { apiClient } from "@/core/api-client";
 import type {
   Habit,
   HabitCreatePayload,
   HabitUpdatePayload,
 } from "./types";
+
+type PrevSnapshot = [QueryKey, Habit[] | undefined][];
 
 export function useHabits(includeArchived = false) {
   return useQuery<Habit[]>({
@@ -51,22 +53,44 @@ export function useArchiveHabit() {
 
 export function useCheckin() {
   const qc = useQueryClient();
-  return useMutation<void, Error, { habitId: string; date?: string }>({
+  return useMutation<void, Error, { habitId: string; date?: string }, { prev: PrevSnapshot }>({
     mutationFn: ({ habitId, date }) =>
       apiClient
         .post(`/habits/${habitId}/checkins`, date ? { date } : undefined)
         .then(() => undefined),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["habits"] }),
+    onMutate: async ({ habitId }) => {
+      await qc.cancelQueries({ queryKey: ["habits"] });
+      const prev = qc.getQueriesData<Habit[]>({ queryKey: ["habits"] });
+      qc.setQueriesData<Habit[]>({ queryKey: ["habits"] }, (old) =>
+        old?.map((h) => (h.id === habitId ? { ...h, done_today: true } : h))
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      ctx?.prev.forEach(([key, data]) => qc.setQueryData(key, data));
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["habits"] }),
   });
 }
 
 export function useDeleteCheckin() {
   const qc = useQueryClient();
-  return useMutation<void, Error, { habitId: string; date: string }>({
+  return useMutation<void, Error, { habitId: string; date: string }, { prev: PrevSnapshot }>({
     mutationFn: ({ habitId, date }) =>
       apiClient
         .delete(`/habits/${habitId}/checkins/${date}`)
         .then(() => undefined),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["habits"] }),
+    onMutate: async ({ habitId }) => {
+      await qc.cancelQueries({ queryKey: ["habits"] });
+      const prev = qc.getQueriesData<Habit[]>({ queryKey: ["habits"] });
+      qc.setQueriesData<Habit[]>({ queryKey: ["habits"] }, (old) =>
+        old?.map((h) => (h.id === habitId ? { ...h, done_today: false } : h))
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      ctx?.prev.forEach(([key, data]) => qc.setQueryData(key, data));
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["habits"] }),
   });
 }

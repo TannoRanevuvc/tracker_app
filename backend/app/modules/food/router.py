@@ -2,7 +2,8 @@ import uuid
 from datetime import date
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth.dependencies import get_current_user_id
@@ -11,6 +12,8 @@ from app.core.events.bus import bus
 from app.modules.food.schemas import (
     DailyGoalCreate,
     DailyGoalResponse,
+    ExternalProductPreview,
+    ImportExternalRequest,
     MealEntryCreate,
     MealEntryResponse,
     ProductCreate,
@@ -23,6 +26,17 @@ from app.modules.food.service import FoodService
 router = APIRouter(prefix="/api/food", tags=["food"])
 
 _UserId = Annotated[uuid.UUID, Depends(get_current_user_id)]
+
+
+async def _call_off(coro):
+    """Translates httpx.TimeoutException → HTTP 502 for Open Food Facts calls."""
+    try:
+        return await coro
+    except httpx.TimeoutException:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Open Food Facts unavailable",
+        )
 
 
 def _svc(session: AsyncSession = Depends(get_session)) -> FoodService:
@@ -55,6 +69,27 @@ async def list_products(
     q: Optional[str] = Query(default=None),
 ):
     return await svc.list_products(q=q)
+
+
+@router.get("/products/search-external", response_model=list[ExternalProductPreview])
+async def search_external_products(
+    user_id: _UserId,
+    svc: _Svc,
+    q: str = Query(...),
+):
+    return await _call_off(svc.search_external(q))
+
+
+@router.post("/products/import-external", response_model=ProductResponse)
+async def import_external_product(
+    body: ImportExternalRequest,
+    user_id: _UserId,
+    svc: _Svc,
+    response: Response,
+):
+    product, created = await _call_off(svc.import_external(body.external_id))
+    response.status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+    return product
 
 
 @router.patch("/products/{product_id}", response_model=ProductResponse)

@@ -9,6 +9,12 @@
   AC#2 (food.daily_goal_reached при первом превышении цели, payload содержит kcal_total) — TestDailyGoalReached
   AC#3 (food.daily_goal_reached не публикуется повторно в тот же день) — TestDailyGoalReached
   AC#4 (food.meal_logged с price_kopecks: null, когда цена не указана) — TestMealLogged
+
+Этап 2 (Open Food Facts):
+  Новых событий не добавляет — search-external и import-external не публикуют
+  и не потребляют события. Статический контракт TestEventContract уже проверяет,
+  что PUBLISHES == {"food.meal_logged", "food.daily_goal_reached"} и SUBSCRIBES_TO == {},
+  что автоматически гарантирует отсутствие незаявленных событий этапа 2.
 """
 from datetime import date
 

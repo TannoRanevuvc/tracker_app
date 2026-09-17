@@ -7,6 +7,7 @@ from sqlalchemy import Date, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.events.bus import EventBus
+from app.modules.food import off_client as _off_client
 from app.modules.food.models import DailyGoal, MealEntry, Product
 
 
@@ -57,7 +58,7 @@ class FoodService:
 
     async def create_product(
         self,
-        user_id: uuid.UUID,
+        user_id: Optional[uuid.UUID],
         name: str,
         kcal_per_100g: float,
         protein_g_per_100g: float,
@@ -84,6 +85,35 @@ class FoodService:
         stmt = stmt.order_by(Product.name)
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
+
+    async def search_external(self, q: str) -> list[dict]:
+        return await _off_client.search_products(q)
+
+    async def import_external(self, external_id: str) -> tuple[Product, bool]:
+        result = await self.session.execute(
+            select(Product).where(Product.external_id == external_id)
+        )
+        existing = result.scalars().first()
+        if existing is not None:
+            return existing, False
+
+        data = await _off_client.get_product(external_id)
+        if data is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Product not found in Open Food Facts",
+            )
+
+        product = await self.create_product(
+            user_id=None,
+            name=data["name"],
+            kcal_per_100g=data["kcal_per_100g"],
+            protein_g_per_100g=data["protein_g_per_100g"],
+            fat_g_per_100g=data["fat_g_per_100g"],
+            carbs_g_per_100g=data["carbs_g_per_100g"],
+            external_id=external_id,
+        )
+        return product, True
 
     async def update_product(
         self,

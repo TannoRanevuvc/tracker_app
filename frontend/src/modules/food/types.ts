@@ -77,3 +77,16 @@ export const MEAL_TYPE_LABELS: Record<MealType, string> = {
 };
 
 export const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
+
+export interface ExternalProductPreview {
+  external_id: string;
+  name: string;
+  kcal_per_100g: number;
+  protein_g_per_100g: number;
+  fat_g_per_100g: number;
+  carbs_g_per_100g: number;
+}
+
+export interface ImportExternalPayload {
+  external_id: string;
+}

@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { Plus, Trash2, X } from "lucide-react";
+import { Pencil, Plus, Trash2, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   useAccounts,
   useCreateAccount,
+  useUpdateAccount,
+  useDeleteAccount,
   useCategories,
   useCreateCategory,
   useDeleteCategory,
 } from "../hooks";
-import { formatRub } from "../types";
+import { formatRub, type Account } from "../types";
 
 // ---------------------------------------------------------------------------
 // Add-account modal
@@ -77,6 +79,80 @@ function AddAccountModal({ open, onClose }: { open: boolean; onClose: () => void
           </motion.div>
         </motion.div>
       )}
+    </AnimatePresence>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Edit-account modal
+// ---------------------------------------------------------------------------
+
+function EditAccountModal({
+  account,
+  onClose,
+}: {
+  account: Account;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(account.name);
+  const update = useUpdateAccount(account.id);
+
+  function handleClose() {
+    update.reset();
+    onClose();
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    update.mutate({ name: name.trim() }, { onSuccess: handleClose });
+  }
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        <motion.div className="absolute inset-0 bg-black/60" onClick={handleClose} />
+        <motion.div
+          className="relative w-full max-w-md bg-brand-gray rounded-3xl p-6 flex flex-col gap-5"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 20, opacity: 0 }}
+          transition={{ duration: 0.25 }}
+        >
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Редактировать счёт</h2>
+            <button onClick={handleClose} className="text-white/40 hover:text-white/70 transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-white">Название</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                autoFocus
+                className="bg-black/40 rounded-xl h-11 px-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-white/20"
+              />
+            </div>
+            {update.isError && <p className="text-red-400 text-sm">Не удалось обновить счёт</p>}
+            <button
+              type="submit"
+              disabled={update.isPending || !name.trim() || name.trim() === account.name}
+              className="w-full h-12 bg-white text-black font-semibold rounded-xl hover:bg-white/90 active:scale-[0.98] transition-transform disabled:opacity-40"
+            >
+              {update.isPending ? "Сохраняем…" : "Сохранить"}
+            </button>
+          </form>
+        </motion.div>
+      </motion.div>
     </AnimatePresence>
   );
 }
@@ -174,15 +250,25 @@ function AddCategoryModal({ open, onClose }: { open: boolean; onClose: () => voi
 
 export default function AccountsTab() {
   const [addAccountOpen, setAddAccountOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
+  const [accountError, setAccountError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const { data: accounts = [], isLoading: loadingAccounts } = useAccounts();
   const { data: categories = [], isLoading: loadingCategories } = useCategories();
+  const deleteAccount = useDeleteAccount();
   const deleteCategory = useDeleteCategory();
 
   const expenseCategories = categories.filter((c) => c.type === "expense");
   const incomeCategories = categories.filter((c) => c.type === "income");
+
+  function handleDeleteAccount(id: string) {
+    setAccountError(null);
+    deleteAccount.mutate(id, {
+      onError: (err) => setAccountError(err.message),
+    });
+  }
 
   function handleDeleteCategory(id: string) {
     setDeleteError(null);
@@ -206,6 +292,10 @@ export default function AccountsTab() {
           </button>
         </div>
 
+        {accountError && (
+          <p className="text-red-400 text-sm px-1">{accountError}</p>
+        )}
+
         {loadingAccounts && (
           <div className="flex justify-center py-6">
             <div className="h-5 w-5 rounded-full border-2 border-white/20 border-t-white animate-spin" />
@@ -221,16 +311,31 @@ export default function AccountsTab() {
         {accounts.map((account) => (
           <div
             key={account.id}
-            className="bg-brand-gray rounded-3xl px-5 py-4 flex items-center justify-between"
+            className="bg-brand-gray rounded-3xl px-5 py-4 flex items-center justify-between gap-3"
           >
-            <span className="font-medium text-white">{account.name}</span>
-            <span
-              className={`text-sm font-semibold ${
-                account.balance_kopecks < 0 ? "text-red-400" : "text-white"
-              }`}
-            >
-              {formatRub(account.balance_kopecks, false)}
-            </span>
+            <span className="font-medium text-white truncate">{account.name}</span>
+            <div className="flex items-center gap-2 shrink-0">
+              <span
+                className={`text-sm font-semibold ${
+                  account.balance_kopecks < 0 ? "text-red-400" : "text-white"
+                }`}
+              >
+                {formatRub(account.balance_kopecks, false)}
+              </span>
+              <button
+                onClick={() => { setAccountError(null); setEditingAccount(account); }}
+                className="h-7 w-7 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/30 hover:text-white/70 transition-colors"
+              >
+                <Pencil size={13} />
+              </button>
+              <button
+                onClick={() => handleDeleteAccount(account.id)}
+                disabled={deleteAccount.isPending}
+                className="h-7 w-7 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/30 hover:text-red-400 transition-colors disabled:opacity-40"
+              >
+                <Trash2 size={13} />
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -308,6 +413,9 @@ export default function AccountsTab() {
       </div>
 
       <AddAccountModal open={addAccountOpen} onClose={() => setAddAccountOpen(false)} />
+      {editingAccount && (
+        <EditAccountModal account={editingAccount} onClose={() => setEditingAccount(null)} />
+      )}
       <AddCategoryModal open={addCategoryOpen} onClose={() => setAddCategoryOpen(false)} />
     </>
   );

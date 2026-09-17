@@ -64,6 +64,10 @@ export interface AccountCreatePayload {
   name: string;
 }
 
+export interface AccountUpdatePayload {
+  name: string;
+}
+
 export interface CategoryCreatePayload {
   name: string;
   type: "income" | "expense";

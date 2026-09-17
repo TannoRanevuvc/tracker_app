@@ -9,6 +9,10 @@ class AccountCreate(BaseModel):
     name: str
 
 
+class AccountUpdate(BaseModel):
+    name: str
+
+
 class AccountResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID

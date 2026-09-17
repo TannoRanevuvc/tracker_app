@@ -4,6 +4,10 @@ Unit-тесты бизнес-логики food. Нет БД, нет HTTP.
 Покрытие критериев приёмки:
   AC#1 (расчёт КБЖУ: quantity_g / 100 * per_100g, округление до 1 знака) — TestCalculateMacros
   AC#6 (активная цель — последняя из тех, у которых effective_from <= today) — TestSelectActiveGoal
+
+Этап 2 (Open Food Facts):
+  parse_off_product — TestParseOffProduct (§4 + §6; явных Given/When/Then в §7 нет,
+  тесты покрывают контракт из §4 и бизнес-правила из §6)
 """
 from datetime import date
 from types import SimpleNamespace
@@ -145,3 +149,86 @@ class TestSelectActiveGoal:
 
         assert select_active_goal([recent, old], today=today) is recent
         assert select_active_goal([old, recent], today=today) is recent
+
+
+# ---------------------------------------------------------------------------
+# Этап 2: парсинг ответа Open Food Facts
+# ---------------------------------------------------------------------------
+
+class TestParseOffProduct:
+    """
+    parse_off_product(raw: dict) -> dict
+    Принимает один элемент из ответа OFF API и возвращает dict, совместимый
+    с ExternalProductPreview: {external_id, name, kcal_per_100g, protein_g_per_100g,
+    fat_g_per_100g, carbs_g_per_100g}.
+
+    Тесты покрывают контракт §4 и правила §6 (defaults для отсутствующих нутриентов).
+    Явных Given/When/Then в §7 для этапа 2 нет — пишем по §4+§6.
+    """
+
+    def _parse(self):
+        from app.modules.food.off_client import parse_off_product
+        return parse_off_product
+
+    def _raw(
+        self,
+        code="3017620422003",
+        name="Nutella",
+        kcal=539.0,
+        protein=6.3,
+        fat=30.9,
+        carbs=57.5,
+    ) -> dict:
+        return {
+            "code": code,
+            "product_name": name,
+            "nutriments": {
+                "energy-kcal_100g": kcal,
+                "proteins_100g": protein,
+                "fat_100g": fat,
+                "carbohydrates_100g": carbs,
+            },
+        }
+
+    def test_external_id_equals_barcode_code(self):
+        result = self._parse()(self._raw(code="3017620422003"))
+        assert result["external_id"] == "3017620422003"
+
+    def test_name_extracted(self):
+        result = self._parse()(self._raw(name="Nutella"))
+        assert result["name"] == "Nutella"
+
+    def test_kcal_per_100g_extracted(self):
+        result = self._parse()(self._raw(kcal=539.0))
+        assert result["kcal_per_100g"] == 539.0
+
+    def test_protein_g_per_100g_extracted(self):
+        result = self._parse()(self._raw(protein=6.3))
+        assert result["protein_g_per_100g"] == 6.3
+
+    def test_fat_g_per_100g_extracted(self):
+        result = self._parse()(self._raw(fat=30.9))
+        assert result["fat_g_per_100g"] == 30.9
+
+    def test_carbs_g_per_100g_extracted(self):
+        result = self._parse()(self._raw(carbs=57.5))
+        assert result["carbs_g_per_100g"] == 57.5
+
+    # §6: при отсутствии нутриента в OFF-данных — default 0.0, не исключение
+    def test_missing_kcal_defaults_to_zero(self):
+        data = {"code": "123", "product_name": "Test", "nutriments": {}}
+        result = self._parse()(data)
+        assert result["kcal_per_100g"] == 0.0
+
+    def test_missing_all_nutrients_default_to_zero(self):
+        data = {"code": "123", "product_name": "Test", "nutriments": {}}
+        result = self._parse()(data)
+        assert result["protein_g_per_100g"] == 0.0
+        assert result["fat_g_per_100g"] == 0.0
+        assert result["carbs_g_per_100g"] == 0.0
+
+    # Нет поля `id` (UUID PK) — только external_id (штрихкод/OFF-id)
+    def test_no_uuid_id_in_result(self):
+        result = self._parse()(self._raw())
+        assert "id" not in result
+        assert "external_id" in result

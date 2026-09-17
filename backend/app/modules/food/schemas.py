@@ -86,3 +86,17 @@ class SummaryResponse(BaseModel):
     carbs_total: float
     kcal_goal: Optional[int]
     goal_reached: bool
+
+
+class ExternalProductPreview(BaseModel):
+    """Результат поиска в Open Food Facts — продукт ещё не в локальной БД, нет `id`."""
+    external_id: str
+    name: str
+    kcal_per_100g: float
+    protein_g_per_100g: float
+    fat_g_per_100g: float
+    carbs_g_per_100g: float
+
+
+class ImportExternalRequest(BaseModel):
+    external_id: str

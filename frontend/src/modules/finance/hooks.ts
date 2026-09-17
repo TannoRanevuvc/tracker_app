@@ -3,6 +3,7 @@ import { apiClient } from "@/core/api-client";
 import type {
   Account,
   AccountCreatePayload,
+  AccountUpdatePayload,
   Budget,
   BudgetCreatePayload,
   Category,
@@ -27,6 +28,36 @@ export function useCreateAccount() {
   return useMutation<Account, Error, AccountCreatePayload>({
     mutationFn: (payload) => apiClient.post<Account>("/finance/accounts", payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["finance", "accounts"] }),
+  });
+}
+
+export function useUpdateAccount(accountId: string) {
+  const qc = useQueryClient();
+  return useMutation<Account, Error, AccountUpdatePayload>({
+    mutationFn: (payload) =>
+      apiClient.patch<Account>(`/finance/accounts/${accountId}`, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["finance", "accounts"] }),
+  });
+}
+
+export function useDeleteAccount() {
+  const qc = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: async (accountId) => {
+      const resp = await apiClient.delete(`/finance/accounts/${accountId}`);
+      if (!resp.ok) {
+        throw new Error(
+          resp.status === 409
+            ? "Нельзя удалить: у счёта есть транзакции"
+            : `HTTP ${resp.status}`
+        );
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["finance", "accounts"] });
+      qc.invalidateQueries({ queryKey: ["finance", "transactions"] });
+      qc.invalidateQueries({ queryKey: ["finance", "summary"] });
+    },
   });
 }
 

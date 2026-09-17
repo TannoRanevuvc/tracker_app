@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/core/api-client";
 import type {
   DailyGoal,
+  ExternalProductPreview,
   GoalCreatePayload,
   MealEntry,
   MealEntryCreatePayload,
@@ -88,5 +89,35 @@ export function useCreateGoal() {
       qc.invalidateQueries({ queryKey: ["food", "goal"] });
       qc.invalidateQueries({ queryKey: ["food", "summary"] });
     },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Open Food Facts (этап 2)
+// ---------------------------------------------------------------------------
+
+/** Поиск в Open Food Facts. Запрос отправляется только когда enabled=true и q непустой. */
+export function useSearchExternal(q: string, enabled: boolean) {
+  return useQuery<ExternalProductPreview[]>({
+    queryKey: ["food", "search-external", q],
+    queryFn: () =>
+      apiClient.get<ExternalProductPreview[]>(
+        `/food/products/search-external?q=${encodeURIComponent(q)}`
+      ),
+    enabled: enabled && q.trim().length > 0,
+    staleTime: 30_000,
+    retry: false,
+  });
+}
+
+/** Импорт продукта из Open Food Facts в локальный кэш. */
+export function useImportExternal() {
+  const qc = useQueryClient();
+  return useMutation<Product, Error, string>({
+    mutationFn: (externalId) =>
+      apiClient.post<Product>("/food/products/import-external", {
+        external_id: externalId,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["food", "products"] }),
   });
 }

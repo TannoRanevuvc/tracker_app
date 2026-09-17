@@ -22,6 +22,8 @@ MEAL_ENTRIES_URL = "/api/food/meal-entries"
 SUMMARY_URL = "/api/food/summary"
 GOALS_URL = "/api/food/goals"
 CURRENT_GOAL_URL = "/api/food/goals/current"
+SEARCH_EXTERNAL_URL = "/api/food/products/search-external"
+IMPORT_EXTERNAL_URL = "/api/food/products/import-external"
 
 
 # ---------------------------------------------------------------------------
@@ -426,3 +428,155 @@ class TestGoals:
         resp = await authed_client.get(CURRENT_GOAL_URL)
         assert resp.status_code == 200
         assert resp.json()["kcal_goal"] == 2200
+
+
+# ---------------------------------------------------------------------------
+# Этап 2: поиск во внешнем API Open Food Facts
+#
+# Тесты покрывают §4 (контракт search-external) и §6 (обработка ошибок).
+# Явных Given/When/Then в §7 для этапа 2 нет — покрытие по §4+§6.
+# ---------------------------------------------------------------------------
+
+class TestSearchExternal:
+    # search-external возвращает список ExternalProductPreview
+    async def test_returns_200_with_list(
+        self, authed_client: AsyncClient, mock_off_search
+    ):
+        resp = await authed_client.get(f"{SEARCH_EXTERNAL_URL}?q=nutella")
+        assert resp.status_code == 200
+        assert isinstance(resp.json(), list)
+
+    # §4: ExternalProductPreview НЕ содержит поле `id` (продукт не в БД)
+    async def test_preview_has_no_id_field(
+        self, authed_client: AsyncClient, mock_off_search
+    ):
+        resp = await authed_client.get(f"{SEARCH_EXTERNAL_URL}?q=nutella")
+        results = resp.json()
+        assert len(results) >= 1
+        assert "id" not in results[0]
+
+    # §4: ExternalProductPreview содержит external_id и все поля КБЖУ
+    async def test_preview_has_external_id_and_macros(
+        self, authed_client: AsyncClient, mock_off_search
+    ):
+        resp = await authed_client.get(f"{SEARCH_EXTERNAL_URL}?q=nutella")
+        p = resp.json()[0]
+        assert "external_id" in p
+        assert "name" in p
+        assert "kcal_per_100g" in p
+        assert "protein_g_per_100g" in p
+        assert "fat_g_per_100g" in p
+        assert "carbs_g_per_100g" in p
+
+    # §6: OFF недоступен → 502 (не роняет остальной функционал)
+    async def test_off_unavailable_returns_502(
+        self, authed_client: AsyncClient, mock_off_search_unavailable
+    ):
+        resp = await authed_client.get(f"{SEARCH_EXTERNAL_URL}?q=nutella")
+        assert resp.status_code == 502
+
+    # Без авторизации → 401
+    async def test_requires_auth(self, client: AsyncClient):
+        resp = await client.get(f"{SEARCH_EXTERNAL_URL}?q=nutella")
+        assert resp.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# Этап 2: импорт продукта из Open Food Facts в локальный кэш
+# ---------------------------------------------------------------------------
+
+class TestImportExternal:
+    # Первый импорт → 201 + Product (полная схема с UUID id)
+    async def test_import_new_product_returns_201(
+        self, authed_client: AsyncClient, mock_off_get_found
+    ):
+        resp = await authed_client.post(
+            IMPORT_EXTERNAL_URL, json={"external_id": "3017620422003"}
+        )
+        assert resp.status_code == 201
+
+    # §4: ответ содержит `id` (UUID) — в отличие от ExternalProductPreview
+    async def test_import_response_has_uuid_id(
+        self, authed_client: AsyncClient, mock_off_get_found
+    ):
+        resp = await authed_client.post(
+            IMPORT_EXTERNAL_URL, json={"external_id": "3017620422003"}
+        )
+        body = resp.json()
+        assert "id" in body
+        assert uuid.UUID(body["id"]).version == 4  # валидный UUID v4
+
+    # §6 (идемпотентность): повторный импорт того же external_id → 200, не 201
+    async def test_import_idempotent_returns_200_on_second_call(
+        self, authed_client: AsyncClient, mock_off_get_found
+    ):
+        await authed_client.post(
+            IMPORT_EXTERNAL_URL, json={"external_id": "3017620422003"}
+        )
+        resp = await authed_client.post(
+            IMPORT_EXTERNAL_URL, json={"external_id": "3017620422003"}
+        )
+        assert resp.status_code == 200
+
+    # §6: повторный импорт возвращает тот же объект (id не меняется)
+    async def test_import_idempotent_same_product_id(
+        self, authed_client: AsyncClient, mock_off_get_found
+    ):
+        r1 = (await authed_client.post(
+            IMPORT_EXTERNAL_URL, json={"external_id": "3017620422003"}
+        )).json()
+        r2 = (await authed_client.post(
+            IMPORT_EXTERNAL_URL, json={"external_id": "3017620422003"}
+        )).json()
+        assert r1["id"] == r2["id"]
+
+    # §6: OFF ответил, но external_id не найден → 404
+    async def test_import_not_found_in_off_returns_404(
+        self, authed_client: AsyncClient, mock_off_get_not_found
+    ):
+        resp = await authed_client.post(
+            IMPORT_EXTERNAL_URL, json={"external_id": "nonexistent_barcode"}
+        )
+        assert resp.status_code == 404
+
+    # §6: OFF недоступен → 502 (не 404 — 404 зарезервирован за "ответил, но нет")
+    async def test_import_off_unavailable_returns_502(
+        self, authed_client: AsyncClient, mock_off_get_unavailable
+    ):
+        resp = await authed_client.post(
+            IMPORT_EXTERNAL_URL, json={"external_id": "3017620422003"}
+        )
+        assert resp.status_code == 502
+
+    # После импорта продукт виден через локальный поиск GET /products?q=...
+    async def test_imported_product_visible_in_local_search(
+        self, authed_client: AsyncClient, mock_off_get_found
+    ):
+        await authed_client.post(
+            IMPORT_EXTERNAL_URL, json={"external_id": "3017620422003"}
+        )
+        resp = await authed_client.get(f"{PRODUCTS_URL}?q=Nutella")
+        assert resp.status_code == 200
+        results = resp.json()
+        assert any(p.get("external_id") == "3017620422003" for p in results)
+
+    # Импортированный продукт можно использовать как product_id в POST /meal-entries
+    async def test_imported_product_usable_in_meal_entry(
+        self, authed_client: AsyncClient, mock_off_get_found
+    ):
+        product = (await authed_client.post(
+            IMPORT_EXTERNAL_URL, json={"external_id": "3017620422003"}
+        )).json()
+        resp = await authed_client.post(MEAL_ENTRIES_URL, json={
+            "product_id": product["id"],
+            "quantity_g": 20,
+            "meal_type": "snack",
+        })
+        assert resp.status_code == 201
+
+    # Без авторизации → 401
+    async def test_requires_auth(self, client: AsyncClient):
+        resp = await client.post(
+            IMPORT_EXTERNAL_URL, json={"external_id": "3017620422003"}
+        )
+        assert resp.status_code == 401

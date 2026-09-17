@@ -95,6 +95,27 @@ class FinanceService:
         )
         return list(result.scalars().all())
 
+    async def update_account(self, user_id: uuid.UUID, account_id: uuid.UUID, name: str) -> Account:
+        account = await self._get_account(user_id, account_id)
+        account.name = name
+        return await self._save(account)
+
+    async def delete_account(self, user_id: uuid.UUID, account_id: uuid.UUID) -> None:
+        account = await self._get_account(user_id, account_id)
+        txn_count = await self.session.execute(
+            select(func.count(Transaction.id)).where(
+                Transaction.account_id == account_id,
+                Transaction.user_id == user_id,
+            )
+        )
+        if txn_count.scalar() > 0:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Account has transactions; delete them first",
+            )
+        await self.session.delete(account)
+        await self.session.commit()
+
     async def _get_account(self, user_id: uuid.UUID, account_id: uuid.UUID) -> Account:
         result = await self.session.execute(
             select(Account).where(Account.id == account_id, Account.user_id == user_id)

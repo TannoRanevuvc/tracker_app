@@ -19,7 +19,7 @@ class Product(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     user_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True)
-    external_id: Mapped[Optional[str]] = mapped_column(sa.Text, nullable=True)
+    external_id: Mapped[Optional[str]] = mapped_column(sa.Text, nullable=True, unique=True)
     name: Mapped[str] = mapped_column(sa.Text, nullable=False)
     kcal_per_100g: Mapped[float] = mapped_column(sa.Numeric(6, 2), nullable=False)
     protein_g_per_100g: Mapped[float] = mapped_column(sa.Numeric(6, 2), nullable=False)

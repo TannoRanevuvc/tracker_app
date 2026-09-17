@@ -8,6 +8,11 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
 class UserResponse(BaseModel):
     id: uuid.UUID
     email: str

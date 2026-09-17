@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import ProtectedRoute from "@/core/auth/ProtectedRoute";
 import LoginPage from "@/core/auth/LoginPage";
+import RegisterPage from "@/core/auth/RegisterPage";
 import Shell from "@/core/shell/Shell";
 import { habitsRoutes } from "@/modules/habits/routes";
 import { tasksRoutes } from "@/modules/tasks/routes";
@@ -10,6 +11,7 @@ import { foodRoutes } from "@/modules/food/routes";
 
 const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
+  { path: "/register", element: <RegisterPage /> },
   {
     path: "/",
     element: <ProtectedRoute />,

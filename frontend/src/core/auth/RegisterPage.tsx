@@ -18,9 +18,10 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,14 +31,19 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (password !== confirm) {
+      setError("Пароли не совпадают");
+      return;
+    }
     setLoading(true);
     setError("");
     try {
-      await apiClient.post("/auth/login", { email, password });
+      await apiClient.post("/auth/register", { email, password });
       await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
       navigate("/");
-    } catch {
-      setError("Неверный email или пароль");
+    } catch (err: unknown) {
+      const msg = (err as Error).message ?? "";
+      setError(msg.includes("409") ? "Этот email уже зарегистрирован" : "Не удалось создать аккаунт");
     } finally {
       setLoading(false);
     }
@@ -45,7 +51,6 @@ export default function LoginPage() {
 
   return (
     <div className="flex h-screen bg-black text-white antialiased font-sans p-2 lg:p-4 selection:bg-white/30">
-      {/* Left panel — video + animated overlay, desktop only */}
       <div className="hidden lg:flex relative flex-[0_0_52%] rounded-3xl overflow-hidden">
         <video
           className="absolute inset-0 h-full w-full object-cover"
@@ -66,7 +71,7 @@ export default function LoginPage() {
             Трекер
           </motion.p>
           <motion.h1 className="text-4xl font-bold leading-tight" variants={itemVariants}>
-            С возвращением
+            Начнём
           </motion.h1>
           <motion.p className="text-white/60 max-w-xs" variants={itemVariants}>
             Привычки, задачи, финансы и питание — всё в одном месте.
@@ -74,7 +79,6 @@ export default function LoginPage() {
         </motion.div>
       </div>
 
-      {/* Right panel — form */}
       <motion.div
         className="flex flex-1 flex-col items-center justify-center px-6 lg:px-16"
         initial={{ opacity: 0 }}
@@ -82,7 +86,7 @@ export default function LoginPage() {
         transition={{ duration: 0.8, ease: "easeOut" }}
       >
         <div className="w-full max-w-sm">
-          <h2 className="text-2xl font-semibold mb-8">Вход</h2>
+          <h2 className="text-2xl font-semibold mb-8">Регистрация</h2>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
@@ -106,6 +110,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
+                  minLength={6}
                   className="w-full bg-brand-gray rounded-xl h-11 px-4 pr-11 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-white/20 border-none"
                 />
                 <button
@@ -118,6 +123,18 @@ export default function LoginPage() {
               </div>
             </div>
 
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-white">Подтверждение пароля</label>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                placeholder="••••••••"
+                required
+                className="bg-brand-gray rounded-xl h-11 px-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-white/20 border-none"
+              />
+            </div>
+
             {error && <p className="text-red-400 text-sm">{error}</p>}
 
             <button
@@ -125,13 +142,13 @@ export default function LoginPage() {
               disabled={loading}
               className="mt-2 w-full h-14 bg-white text-black font-semibold rounded-xl hover:bg-white/90 active:scale-[0.98] transition-transform disabled:opacity-50"
             >
-              {loading ? "Входим…" : "Войти"}
+              {loading ? "Создаём аккаунт…" : "Зарегистрироваться"}
             </button>
 
             <p className="text-center text-sm text-white/40">
-              Нет аккаунта?{" "}
-              <Link to="/register" className="text-white/70 hover:text-white transition-colors">
-                Зарегистрироваться
+              Уже есть аккаунт?{" "}
+              <Link to="/login" className="text-white/70 hover:text-white transition-colors">
+                Войти
               </Link>
             </p>
           </form>

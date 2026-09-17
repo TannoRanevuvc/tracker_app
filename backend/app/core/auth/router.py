@@ -7,12 +7,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth.dependencies import get_current_user_id
 from app.core.auth.models import RefreshToken, User
-from app.core.auth.schemas import LoginRequest, LoginResponse, UserResponse
+from app.core.auth.schemas import LoginRequest, LoginResponse, RegisterRequest, UserResponse
 from app.core.auth.service import (
     authenticate_user,
     create_access_token,
     create_refresh_token_raw,
     get_refresh_token_record,
+    hash_password,
     hash_refresh_token,
 )
 from app.core.config import settings
@@ -35,6 +36,36 @@ def _set_refresh_cookie(response: Response, token: str) -> None:
 def _clear_cookies(response: Response) -> None:
     response.delete_cookie("access_token")
     response.delete_cookie("refresh_token")
+
+
+@router.post("/register", response_model=LoginResponse, status_code=status.HTTP_201_CREATED)
+async def register(
+    body: RegisterRequest,
+    response: Response,
+    session: AsyncSession = Depends(get_session),
+):
+    existing = await session.execute(select(User).where(User.email == body.email))
+    if existing.scalars().first() is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+
+    user = User(id=uuid.uuid4(), email=body.email, password_hash=hash_password(body.password))
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+
+    access_token = create_access_token(user.id)
+    raw_refresh = create_refresh_token_raw()
+    token_record = RefreshToken(
+        user_id=user.id,
+        token_hash=hash_refresh_token(raw_refresh),
+        expires_at=datetime.now(UTC) + timedelta(days=settings.refresh_token_expire_days),
+    )
+    session.add(token_record)
+    await session.commit()
+
+    _set_access_cookie(response, access_token)
+    _set_refresh_cookie(response, raw_refresh)
+    return LoginResponse(user=UserResponse.model_validate(user))
 
 
 @router.post("/login", response_model=LoginResponse)

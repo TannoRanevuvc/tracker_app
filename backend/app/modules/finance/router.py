@@ -11,6 +11,7 @@ from app.core.events.bus import bus
 from app.modules.finance.schemas import (
     AccountCreate,
     AccountResponse,
+    AccountSetBalance,
     AccountUpdate,
     BudgetCreate,
     BudgetResponse,
@@ -54,6 +55,13 @@ async def list_accounts(user_id: _UserId, svc: _Svc):
 @router.patch("/accounts/{account_id}", response_model=AccountResponse)
 async def update_account(account_id: uuid.UUID, body: AccountUpdate, user_id: _UserId, svc: _Svc):
     return await svc.update_account(user_id=user_id, account_id=account_id, name=body.name)
+
+
+@router.patch("/accounts/{account_id}/balance", response_model=AccountResponse)
+async def set_account_balance(account_id: uuid.UUID, body: AccountSetBalance, user_id: _UserId, svc: _Svc):
+    return await svc.set_account_balance(
+        user_id=user_id, account_id=account_id, balance_kopecks=body.balance_kopecks
+    )
 
 
 @router.delete("/accounts/{account_id}", status_code=status.HTTP_204_NO_CONTENT)

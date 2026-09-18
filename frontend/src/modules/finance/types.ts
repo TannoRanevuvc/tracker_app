@@ -68,6 +68,10 @@ export interface AccountUpdatePayload {
   name: string;
 }
 
+export interface AccountSetBalancePayload {
+  balance_kopecks: number;
+}
+
 export interface CategoryCreatePayload {
   name: string;
   type: "income" | "expense";

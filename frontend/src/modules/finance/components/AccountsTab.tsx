@@ -5,6 +5,7 @@ import {
   useAccounts,
   useCreateAccount,
   useUpdateAccount,
+  useSetAccountBalance,
   useDeleteAccount,
   useCategories,
   useCreateCategory,
@@ -87,6 +88,14 @@ function AddAccountModal({ open, onClose }: { open: boolean; onClose: () => void
 // Edit-account modal
 // ---------------------------------------------------------------------------
 
+function kopecksToRub(kopecks: number): string {
+  return (kopecks / 100).toFixed(2).replace(".", ",");
+}
+
+function rubToKopecks(rub: string): number {
+  return Math.round(parseFloat(rub.replace(",", ".")) * 100);
+}
+
 function EditAccountModal({
   account,
   onClose,
@@ -95,16 +104,50 @@ function EditAccountModal({
   onClose: () => void;
 }) {
   const [name, setName] = useState(account.name);
+  const [balanceStr, setBalanceStr] = useState(kopecksToRub(account.balance_kopecks));
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, setIsPending] = useState(false);
   const update = useUpdateAccount(account.id);
+  const setBalance = useSetAccountBalance(account.id);
 
   function handleClose() {
     update.reset();
+    setBalance.reset();
+    setError(null);
     onClose();
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    update.mutate({ name: name.trim() }, { onSuccess: handleClose });
+    setError(null);
+
+    const trimmedName = name.trim();
+    const newBalanceKopecks = rubToKopecks(balanceStr);
+
+    if (!trimmedName) return;
+    if (isNaN(newBalanceKopecks)) {
+      setError("Введите корректную сумму");
+      return;
+    }
+
+    const nameChanged = trimmedName !== account.name;
+    const balanceChanged = newBalanceKopecks !== account.balance_kopecks;
+
+    if (!nameChanged && !balanceChanged) {
+      onClose();
+      return;
+    }
+
+    setIsPending(true);
+    try {
+      if (nameChanged) await update.mutateAsync({ name: trimmedName });
+      if (balanceChanged) await setBalance.mutateAsync({ balance_kopecks: newBalanceKopecks });
+      onClose();
+    } catch {
+      setError("Не удалось сохранить изменения");
+    } finally {
+      setIsPending(false);
+    }
   }
 
   return (
@@ -142,13 +185,24 @@ function EditAccountModal({
                 className="bg-black/40 rounded-xl h-11 px-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-white/20"
               />
             </div>
-            {update.isError && <p className="text-red-400 text-sm">Не удалось обновить счёт</p>}
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-white">Баланс, ₽</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={balanceStr}
+                onChange={(e) => setBalanceStr(e.target.value)}
+                className="bg-black/40 rounded-xl h-11 px-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-white/20"
+              />
+              <p className="text-xs text-white/30">Задаёт начальный баланс напрямую, без создания транзакции</p>
+            </div>
+            {error && <p className="text-red-400 text-sm">{error}</p>}
             <button
               type="submit"
-              disabled={update.isPending || !name.trim() || name.trim() === account.name}
+              disabled={isPending || !name.trim()}
               className="w-full h-12 bg-white text-black font-semibold rounded-xl hover:bg-white/90 active:scale-[0.98] transition-transform disabled:opacity-40"
             >
-              {update.isPending ? "Сохраняем…" : "Сохранить"}
+              {isPending ? "Сохраняем…" : "Сохранить"}
             </button>
           </form>
         </motion.div>

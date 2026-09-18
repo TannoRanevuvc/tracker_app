@@ -3,6 +3,7 @@ import { apiClient } from "@/core/api-client";
 import type {
   Account,
   AccountCreatePayload,
+  AccountSetBalancePayload,
   AccountUpdatePayload,
   Budget,
   BudgetCreatePayload,
@@ -36,6 +37,15 @@ export function useUpdateAccount(accountId: string) {
   return useMutation<Account, Error, AccountUpdatePayload>({
     mutationFn: (payload) =>
       apiClient.patch<Account>(`/finance/accounts/${accountId}`, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["finance", "accounts"] }),
+  });
+}
+
+export function useSetAccountBalance(accountId: string) {
+  const qc = useQueryClient();
+  return useMutation<Account, Error, AccountSetBalancePayload>({
+    mutationFn: (payload) =>
+      apiClient.patch<Account>(`/finance/accounts/${accountId}/balance`, payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["finance", "accounts"] }),
   });
 }

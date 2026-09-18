@@ -100,6 +100,13 @@ class FinanceService:
         account.name = name
         return await self._save(account)
 
+    async def set_account_balance(
+        self, user_id: uuid.UUID, account_id: uuid.UUID, balance_kopecks: int
+    ) -> Account:
+        account = await self._get_account(user_id, account_id)
+        account.balance_kopecks = balance_kopecks
+        return await self._save(account)
+
     async def delete_account(self, user_id: uuid.UUID, account_id: uuid.UUID) -> None:
         account = await self._get_account(user_id, account_id)
         txn_count = await self.session.execute(

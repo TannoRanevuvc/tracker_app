@@ -13,6 +13,10 @@ class AccountUpdate(BaseModel):
     name: str
 
 
+class AccountSetBalance(BaseModel):
+    balance_kopecks: int
+
+
 class AccountResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID

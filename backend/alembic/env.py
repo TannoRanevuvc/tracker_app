@@ -17,6 +17,7 @@ if config.config_file_name is not None:
 from app.core.db import Base
 import app.core.auth.models  # noqa: F401
 import app.modules.tasks.models  # noqa: F401
+import app.modules.calendar.models  # noqa: F401
 
 target_metadata = Base.metadata
 

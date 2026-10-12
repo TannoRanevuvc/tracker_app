@@ -1,4 +1,4 @@
-import { CheckSquare, ListTodo, Wallet, Salad, Flame } from "lucide-react";
+import { CheckSquare, ListTodo, Wallet, Salad, Flame, CalendarDays } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export interface NavItem {
@@ -14,4 +14,5 @@ export const navItems: NavItem[] = [
   { label: "Финансы",   path: "/finance",    moduleId: "finance",    icon: Wallet },
   { label: "Питание",   path: "/food",       moduleId: "food",       icon: Salad },
   { label: "Мотивация", path: "/motivation", moduleId: "motivation", icon: Flame },
+  { label: "Календарь", path: "/calendar",   moduleId: "calendar",   icon: CalendarDays },
 ];

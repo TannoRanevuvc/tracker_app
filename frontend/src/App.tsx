@@ -8,6 +8,7 @@ import { tasksRoutes } from "@/modules/tasks/routes";
 import { motivationRoutes } from "@/modules/motivation/routes";
 import { financeRoutes } from "@/modules/finance/routes";
 import { foodRoutes } from "@/modules/food/routes";
+import { calendarRoutes } from "@/modules/calendar/routes";
 
 const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
@@ -25,6 +26,7 @@ const router = createBrowserRouter([
           ...motivationRoutes,
           ...financeRoutes,
           ...foodRoutes,
+          ...calendarRoutes,
         ],
       },
     ],

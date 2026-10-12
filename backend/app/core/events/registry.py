@@ -14,4 +14,5 @@ MODULES: list[ModuleMeta] = [
     ModuleMeta(name="finance", version="0.1.0", enabled=True),
     ModuleMeta(name="food", version="0.1.0", enabled=True),
     ModuleMeta(name="motivation", version="0.1.0", enabled=True),
+    ModuleMeta(name="calendar", version="0.1.0", enabled=True),
 ]

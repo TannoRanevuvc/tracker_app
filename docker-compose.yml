@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: tracker
       POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -16,7 +16,7 @@ services:
   backend:
     build: ./backend
     environment:
-      DATABASE_URL: postgresql+asyncpg://user:password@postgres:5432/tracker
+      DATABASE_URL: postgresql+asyncpg://user:${POSTGRES_PASSWORD:-password}@postgres:5432/tracker
       SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
     depends_on:
       postgres:

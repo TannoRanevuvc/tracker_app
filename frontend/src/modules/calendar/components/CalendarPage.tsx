@@ -265,7 +265,7 @@ export default function CalendarPage() {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 overflow-hidden flex flex-col px-4 pb-4">
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col px-4 pb-4">
         {view === "month" ? (
           <MonthView
             year={year}

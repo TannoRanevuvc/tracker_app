@@ -133,7 +133,7 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
       {/* All-day strip */}
       {allDayItems.length > 0 && (
         <div className="px-4 py-2 border-b border-white/10 flex flex-col gap-1">
@@ -165,7 +165,7 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
       )}
 
       {/* Time grid */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
         <div className="relative" style={{ height: HOUR_HEIGHT * 24 }}>
           {/* Hour rows */}
           {HOURS.map((hour) => (

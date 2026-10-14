@@ -105,20 +105,35 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
     return () => clearInterval(id);
   }, [day.toDateString()]);
 
-  // Scroll to center current time (or 8am for other days)
-  // rAF ensures the element has its final clientHeight before we read it
+  // Scroll to center current time (or 8am for other days).
+  // ResizeObserver waits for the flex container to get a real height before scrolling —
+  // rAF alone isn't enough because the flex layout resolves after the first paint.
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const id = requestAnimationFrame(() => {
+
+    const doScroll = () => {
       const top = getNowTop(day);
       if (top !== null) {
         el.scrollTop = Math.max(0, top - el.clientHeight / 2);
       } else {
         el.scrollTop = 8 * HOUR_HEIGHT;
       }
+    };
+
+    if (el.clientHeight > 0) {
+      doScroll();
+      return;
+    }
+
+    const ro = new ResizeObserver(() => {
+      if (el.clientHeight > 0) {
+        doScroll();
+        ro.disconnect();
+      }
     });
-    return () => cancelAnimationFrame(id);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, [day.toDateString()]);
 
   const allDayItems = items.filter((i) => i.all_day);

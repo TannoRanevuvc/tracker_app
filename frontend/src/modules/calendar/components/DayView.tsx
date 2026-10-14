@@ -1,7 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CalendarItem } from "../types";
 
-const HOUR_HEIGHT = 64; // px per hour
+const HOUR_HEIGHT = 64;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 function pad(n: number) {
@@ -16,6 +16,16 @@ function timeToMinutes(iso: string): number {
 function formatTime(iso: string): string {
   const d = new Date(iso);
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function getNowTop(day: Date): number | null {
+  const now = new Date();
+  const isToday =
+    day.getFullYear() === now.getFullYear() &&
+    day.getMonth() === now.getMonth() &&
+    day.getDate() === now.getDate();
+  if (!isToday) return null;
+  return ((now.getHours() * 60 + now.getMinutes()) / 60) * HOUR_HEIGHT;
 }
 
 interface PositionedItem {
@@ -35,9 +45,7 @@ function layoutItems(items: CalendarItem[]): PositionedItem[] {
 
   for (const item of timed) {
     const startMin = timeToMinutes(item.start_at);
-    const endMin = item.end_at
-      ? timeToMinutes(item.end_at)
-      : startMin + 60;
+    const endMin = item.end_at ? timeToMinutes(item.end_at) : startMin + 60;
 
     let placed = false;
     for (const group of groups) {
@@ -59,12 +67,9 @@ function layoutItems(items: CalendarItem[]): PositionedItem[] {
     positioned.push({ item, top, height, column: 0, totalColumns: 1 });
   }
 
-  // Assign columns for overlapping items
   for (const p of positioned) {
     const startMin = timeToMinutes(p.item.start_at);
-    const endMin = p.item.end_at
-      ? timeToMinutes(p.item.end_at)
-      : startMin + 60;
+    const endMin = p.item.end_at ? timeToMinutes(p.item.end_at) : startMin + 60;
     const overlapping = positioned.filter((q) => {
       const qStart = timeToMinutes(q.item.start_at);
       const qEnd = q.item.end_at ? timeToMinutes(q.item.end_at) : qStart + 60;
@@ -91,30 +96,36 @@ interface Props {
 
 export default function DayView({ day, items, onSlotClick, onEventClick }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [nowTop, setNowTop] = useState<number | null>(() => getNowTop(day));
+
+  // Update time indicator every minute
+  useEffect(() => {
+    setNowTop(getNowTop(day));
+    const id = setInterval(() => setNowTop(getNowTop(day)), 60_000);
+    return () => clearInterval(id);
+  }, [day.toDateString()]);
+
+  // Scroll to center current time (or 8am for other days)
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const top = getNowTop(day);
+    if (top !== null) {
+      // Center the current time line in the visible area
+      el.scrollTop = Math.max(0, top - el.clientHeight / 2);
+    } else {
+      el.scrollTop = 8 * HOUR_HEIGHT;
+    }
+  }, [day.toDateString()]);
 
   const allDayItems = items.filter((i) => i.all_day);
   const positioned = layoutItems(items);
 
+  // Current time label
   const now = new Date();
-  const isToday =
-    day.getFullYear() === now.getFullYear() &&
-    day.getMonth() === now.getMonth() &&
-    day.getDate() === now.getDate();
-  const nowTop = isToday
-    ? ((now.getHours() * 60 + now.getMinutes()) / 60) * HOUR_HEIGHT
-    : null;
-
-  useEffect(() => {
-    if (scrollRef.current && isToday) {
-      const scrollTo = Math.max(0, ((now.getHours() - 2) / 24) * HOUR_HEIGHT * 24);
-      scrollRef.current.scrollTop = scrollTo;
-    } else if (scrollRef.current) {
-      scrollRef.current.scrollTop = 8 * HOUR_HEIGHT; // scroll to 8am
-    }
-  }, [day.toDateString()]);
+  const nowLabel = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
   function handleHourClick(hour: number) {
-    const pad = (n: number) => String(n).padStart(2, "0");
     onSlotClick(`${pad(hour)}:00`);
   }
 
@@ -173,10 +184,16 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
           {/* Current time indicator */}
           {nowTop !== null && (
             <div
-              className="absolute left-14 right-0 flex items-center z-10 pointer-events-none"
+              className="absolute inset-x-0 flex items-center z-10 pointer-events-none"
               style={{ top: nowTop }}
             >
-              <div className="w-2 h-2 rounded-full bg-red-400 -ml-1" />
+              {/* Time label */}
+              <span className="w-14 text-right pr-2 text-[10px] font-semibold text-red-400 select-none shrink-0 leading-none">
+                {nowLabel}
+              </span>
+              {/* Dot */}
+              <div className="w-2.5 h-2.5 rounded-full bg-red-400 shrink-0 -ml-1.5" />
+              {/* Line */}
               <div className="flex-1 h-px bg-red-400" />
             </div>
           )}

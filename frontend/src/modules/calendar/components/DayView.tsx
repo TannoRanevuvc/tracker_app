@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CalendarItem } from "../types";
 
 const HOUR_HEIGHT = 64;
@@ -105,35 +105,20 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
     return () => clearInterval(id);
   }, [day.toDateString()]);
 
-  // Scroll to center current time (or 8am for other days).
-  // ResizeObserver waits for the flex container to get a real height before scrolling —
-  // rAF alone isn't enough because the flex layout resolves after the first paint.
-  useEffect(() => {
+  // useLayoutEffect runs after React commits the DOM but before the browser paints,
+  // so the flex layout is already calculated and scrollTop sticks immediately.
+  // We avoid reading clientHeight entirely — fixed 2.5h offset above current time
+  // (same visual as Google Calendar) removes any dependency on container height.
+  useLayoutEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-
-    const doScroll = () => {
-      const top = getNowTop(day);
-      if (top !== null) {
-        el.scrollTop = Math.max(0, top - el.clientHeight / 2);
-      } else {
-        el.scrollTop = 8 * HOUR_HEIGHT;
-      }
-    };
-
-    if (el.clientHeight > 0) {
-      doScroll();
-      return;
+    const now = new Date();
+    if (day.toDateString() === now.toDateString()) {
+      const minutes = now.getHours() * 60 + now.getMinutes();
+      el.scrollTop = Math.max(0, (minutes / 60 - 2.5) * HOUR_HEIGHT);
+    } else {
+      el.scrollTop = 8 * HOUR_HEIGHT;
     }
-
-    const ro = new ResizeObserver(() => {
-      if (el.clientHeight > 0) {
-        doScroll();
-        ro.disconnect();
-      }
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
   }, [day.toDateString()]);
 
   const allDayItems = items.filter((i) => i.all_day);

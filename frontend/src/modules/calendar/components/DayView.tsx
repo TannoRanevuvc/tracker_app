@@ -1,8 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CalendarItem } from "../types";
 
-const HOUR_HEIGHT = 64;
+const HOUR_HEIGHT = 56;   // px per hour (Google Calendar default zoom)
+const COL_W = 52;         // width of the time-label column in px
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const HALF_HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -18,14 +20,14 @@ function formatTime(iso: string): string {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function getNowTop(day: Date): number | null {
+function getNowMinutes(day: Date): number | null {
   const now = new Date();
   const isToday =
     day.getFullYear() === now.getFullYear() &&
     day.getMonth() === now.getMonth() &&
     day.getDate() === now.getDate();
   if (!isToday) return null;
-  return ((now.getHours() * 60 + now.getMinutes()) / 60) * HOUR_HEIGHT;
+  return now.getHours() * 60 + now.getMinutes();
 }
 
 interface PositionedItem {
@@ -41,29 +43,12 @@ function layoutItems(items: CalendarItem[]): PositionedItem[] {
   timed.sort((a, b) => timeToMinutes(a.start_at) - timeToMinutes(b.start_at));
 
   const positioned: PositionedItem[] = [];
-  const groups: CalendarItem[][] = [];
 
   for (const item of timed) {
     const startMin = timeToMinutes(item.start_at);
     const endMin = item.end_at ? timeToMinutes(item.end_at) : startMin + 60;
-
-    let placed = false;
-    for (const group of groups) {
-      const lastEnd = Math.max(
-        ...group.map((gi) =>
-          gi.end_at ? timeToMinutes(gi.end_at) : timeToMinutes(gi.start_at) + 60
-        )
-      );
-      if (startMin >= lastEnd) {
-        group.push(item);
-        placed = true;
-        break;
-      }
-    }
-    if (!placed) groups.push([item]);
-
     const top = (startMin / 60) * HOUR_HEIGHT;
-    const height = Math.max(((endMin - startMin) / 60) * HOUR_HEIGHT, 24);
+    const height = Math.max(((endMin - startMin) / 60) * HOUR_HEIGHT, 22);
     positioned.push({ item, top, height, column: 0, totalColumns: 1 });
   }
 
@@ -77,9 +62,9 @@ function layoutItems(items: CalendarItem[]): PositionedItem[] {
     });
     if (overlapping.length > 0) {
       p.totalColumns = overlapping.length + 1;
-      const usedColumns = overlapping.map((q) => q.column);
+      const used = overlapping.map((q) => q.column);
       let col = 0;
-      while (usedColumns.includes(col)) col++;
+      while (used.includes(col)) col++;
       p.column = col;
     }
   }
@@ -96,26 +81,22 @@ interface Props {
 
 export default function DayView({ day, items, onSlotClick, onEventClick }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [nowTop, setNowTop] = useState<number | null>(() => getNowTop(day));
+  const [nowMinutes, setNowMinutes] = useState<number | null>(() => getNowMinutes(day));
 
-  // Update time indicator every minute
   useEffect(() => {
-    setNowTop(getNowTop(day));
-    const id = setInterval(() => setNowTop(getNowTop(day)), 60_000);
+    setNowMinutes(getNowMinutes(day));
+    const id = setInterval(() => setNowMinutes(getNowMinutes(day)), 60_000);
     return () => clearInterval(id);
   }, [day.toDateString()]);
 
-  // useLayoutEffect runs after React commits the DOM but before the browser paints,
-  // so the flex layout is already calculated and scrollTop sticks immediately.
-  // We avoid reading clientHeight entirely — fixed 2.5h offset above current time
-  // (same visual as Google Calendar) removes any dependency on container height.
+  // useLayoutEffect: runs after DOM commit, before paint — flex layout already resolved
   useLayoutEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const now = new Date();
-    if (day.toDateString() === now.toDateString()) {
-      const minutes = now.getHours() * 60 + now.getMinutes();
-      el.scrollTop = Math.max(0, (minutes / 60 - 2.5) * HOUR_HEIGHT);
+    const mins = getNowMinutes(day);
+    if (mins !== null) {
+      // Show current time with ~2.5 h of context above (Google Calendar style)
+      el.scrollTop = Math.max(0, (mins / 60 - 2.5) * HOUR_HEIGHT);
     } else {
       el.scrollTop = 8 * HOUR_HEIGHT;
     }
@@ -124,25 +105,34 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
   const allDayItems = items.filter((i) => i.all_day);
   const positioned = layoutItems(items);
 
-  // Current time label
-  const now = new Date();
-  const nowLabel = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const nowTop = nowMinutes !== null ? (nowMinutes / 60) * HOUR_HEIGHT : null;
+  const nowLabel =
+    nowMinutes !== null
+      ? `${pad(Math.floor(nowMinutes / 60))}:${pad(nowMinutes % 60)}`
+      : null;
 
-  function handleHourClick(hour: number) {
-    onSlotClick(`${pad(hour)}:00`);
+  function handleGridClick(e: React.MouseEvent<HTMLDivElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const y = e.clientY - rect.top + (scrollRef.current?.scrollTop ?? 0);
+    const totalMins = Math.floor((y / HOUR_HEIGHT) * 60);
+    const h = Math.floor(totalMins / 60);
+    const m = Math.floor(totalMins / 30) % 2 === 0 ? 0 : 30;
+    onSlotClick(`${pad(h)}:${pad(m)}`);
   }
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
       {/* All-day strip */}
       {allDayItems.length > 0 && (
-        <div className="px-4 py-2 border-b border-white/10 flex flex-col gap-1">
-          <span className="text-xs text-white/40 mb-1">Весь день</span>
+        <div className="px-3 py-2 border-b border-white/8 flex flex-col gap-1 shrink-0">
+          <span className="text-[10px] text-white/30 mb-0.5 uppercase tracking-wide">
+            Весь день
+          </span>
           {allDayItems.map((item) => (
             <button
               key={item.id}
               onClick={() => onEventClick(item)}
-              className="text-xs rounded-lg px-3 py-1.5 text-left font-medium transition-opacity hover:opacity-80"
+              className="text-xs rounded-md px-2 py-1 text-left font-medium transition-opacity hover:opacity-80"
               style={{
                 backgroundColor:
                   item.source === "task"
@@ -157,7 +147,7 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
             >
               {item.title}
               {item.source === "task" && (
-                <span className="ml-1 text-white/30">· задача</span>
+                <span className="ml-1 opacity-50">· задача</span>
               )}
             </button>
           ))}
@@ -166,36 +156,75 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
 
       {/* Time grid */}
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
-        <div className="relative" style={{ height: HOUR_HEIGHT * 24 }}>
-          {/* Hour rows */}
+        <div
+          className="relative select-none"
+          style={{ height: HOUR_HEIGHT * 24 }}
+          onClick={handleGridClick}
+        >
+          {/* Hour lines + labels */}
           {HOURS.map((hour) => (
             <div
               key={hour}
-              className="absolute w-full flex items-start"
-              style={{ top: hour * HOUR_HEIGHT, height: HOUR_HEIGHT }}
+              className="absolute w-full pointer-events-none"
+              style={{ top: hour * HOUR_HEIGHT }}
             >
-              <span className="w-14 text-right pr-3 text-xs text-white/30 select-none pt-0.5 shrink-0">
-                {pad(hour)}:00
-              </span>
-              <button
-                className="flex-1 border-t border-white/5 hover:bg-white/5 transition-colors h-full"
-                onClick={() => handleHourClick(hour)}
+              {/* Hour label — centered on the line via -translate-y-1/2 */}
+              {hour > 0 && (
+                <span
+                  className="absolute text-[10px] text-white/35 leading-none"
+                  style={{
+                    right: `calc(100% - ${COL_W}px + 8px)`,
+                    transform: "translateY(-50%)",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {pad(hour)}:00
+                </span>
+              )}
+              {/* Hour line (starts after time column) */}
+              <div
+                className="absolute h-px bg-white/10"
+                style={{ left: COL_W, right: 0 }}
               />
             </div>
           ))}
 
-          {/* Current time indicator */}
-          {nowTop !== null && (
+          {/* Half-hour lines */}
+          {HALF_HOURS.map((hour) => (
             <div
-              className="absolute inset-x-0 flex items-center z-10 pointer-events-none"
+              key={`h-${hour}`}
+              className="absolute pointer-events-none"
+              style={{
+                top: hour * HOUR_HEIGHT + HOUR_HEIGHT / 2,
+                left: COL_W,
+                right: 0,
+                height: 1,
+                background: "rgba(255,255,255,0.04)",
+              }}
+            />
+          ))}
+
+          {/* Clickable grid overlay */}
+          <div
+            className="absolute inset-y-0 cursor-pointer"
+            style={{ left: COL_W, right: 0 }}
+          />
+
+          {/* Current time indicator */}
+          {nowTop !== null && nowLabel !== null && (
+            <div
+              className="absolute inset-x-0 z-20 pointer-events-none flex items-center"
               style={{ top: nowTop }}
             >
-              {/* Time label */}
-              <span className="w-14 text-right pr-2 text-[10px] font-semibold text-red-400 select-none shrink-0 leading-none">
+              {/* Red time label in the column */}
+              <span
+                className="text-[10px] font-semibold text-red-400 leading-none shrink-0"
+                style={{ width: COL_W - 4, textAlign: "right" }}
+              >
                 {nowLabel}
               </span>
-              {/* Dot */}
-              <div className="w-2.5 h-2.5 rounded-full bg-red-400 shrink-0 -ml-1.5" />
+              {/* Dot at column edge */}
+              <div className="w-2.5 h-2.5 rounded-full bg-red-400 shrink-0 -ml-1.5 -mr-1" />
               {/* Line */}
               <div className="flex-1 h-px bg-red-400" />
             </div>
@@ -204,33 +233,35 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
           {/* Event blocks */}
           {positioned.map(({ item, top, height, column, totalColumns }) => {
             const isTask = item.source === "task";
-            const colWidth = `calc((100% - 56px) / ${totalColumns})`;
-            const left = `calc(56px + ${column} * (100% - 56px) / ${totalColumns})`;
+            const gridW = `calc(100% - ${COL_W}px)`;
+            const colW = `calc(${gridW} / ${totalColumns} - 2px)`;
+            const left = `calc(${COL_W}px + ${column} * ${gridW} / ${totalColumns} + 1px)`;
 
             return (
               <button
                 key={item.id}
-                onClick={() => !isTask && onEventClick(item)}
-                className={`absolute rounded-lg px-2 py-1 text-left overflow-hidden transition-opacity ${
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!isTask) onEventClick(item);
+                }}
+                className={`absolute rounded px-2 py-1 text-left overflow-hidden transition-opacity ${
                   isTask ? "cursor-default" : "hover:opacity-80 cursor-pointer"
                 }`}
                 style={{
                   top: top + 1,
                   height: height - 2,
                   left,
-                  width: colWidth,
+                  width: colW,
                   backgroundColor: isTask
                     ? "rgba(107,114,128,0.15)"
                     : `${item.color ?? "#3b82f6"}25`,
-                  border: isTask
-                    ? "1px dashed rgba(107,114,128,0.4)"
-                    : `1px solid ${item.color ?? "#3b82f6"}60`,
+                  borderLeft: `3px solid ${isTask ? "rgba(107,114,128,0.5)" : (item.color ?? "#3b82f6")}`,
                   color: isTask ? "#9ca3af" : (item.color ?? "#3b82f6"),
                 }}
               >
-                <p className="text-xs font-semibold leading-tight truncate">{item.title}</p>
-                {height > 32 && (
-                  <p className="text-[10px] opacity-70 leading-tight">
+                <p className="text-[11px] font-semibold leading-tight truncate">{item.title}</p>
+                {height > 30 && (
+                  <p className="text-[10px] opacity-70 leading-tight mt-0.5">
                     {formatTime(item.start_at)}
                     {item.end_at ? ` – ${formatTime(item.end_at)}` : ""}
                     {isTask ? " · задача" : ""}

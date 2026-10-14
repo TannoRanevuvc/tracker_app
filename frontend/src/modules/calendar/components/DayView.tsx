@@ -106,16 +106,19 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
   }, [day.toDateString()]);
 
   // Scroll to center current time (or 8am for other days)
+  // rAF ensures the element has its final clientHeight before we read it
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const top = getNowTop(day);
-    if (top !== null) {
-      // Center the current time line in the visible area
-      el.scrollTop = Math.max(0, top - el.clientHeight / 2);
-    } else {
-      el.scrollTop = 8 * HOUR_HEIGHT;
-    }
+    const id = requestAnimationFrame(() => {
+      const top = getNowTop(day);
+      if (top !== null) {
+        el.scrollTop = Math.max(0, top - el.clientHeight / 2);
+      } else {
+        el.scrollTop = 8 * HOUR_HEIGHT;
+      }
+    });
+    return () => cancelAnimationFrame(id);
   }, [day.toDateString()]);
 
   const allDayItems = items.filter((i) => i.all_day);

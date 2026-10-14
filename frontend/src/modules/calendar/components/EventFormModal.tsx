@@ -25,7 +25,15 @@ function toLocalDatetimeValue(iso: string): { date: string; time: string } {
 }
 
 function toISOString(date: string, time: string): string {
-  return `${date}T${time}:00`;
+  // Parse as local time and convert to UTC ISO string.
+  // Without this, the server (timezone=True column) treats the naive
+  // string as UTC, causing +offset hours to appear on display.
+  return new Date(`${date}T${time}:00`).toISOString();
+}
+
+function localDateString(d: Date = new Date()): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
 export default function EventFormModal({
@@ -43,7 +51,7 @@ export default function EventFormModal({
 
   const initDate = initialData
     ? toLocalDatetimeValue(initialData.start_at).date
-    : defaultDate ?? new Date().toISOString().slice(0, 10);
+    : defaultDate ?? localDateString();
 
   const initStartTime = initialData
     ? toLocalDatetimeValue(initialData.start_at).time
@@ -68,7 +76,7 @@ export default function EventFormModal({
       setDate(
         initialData
           ? toLocalDatetimeValue(initialData.start_at).date
-          : defaultDate ?? new Date().toISOString().slice(0, 10)
+          : defaultDate ?? localDateString()
       );
       setStartTime(
         initialData ? toLocalDatetimeValue(initialData.start_at).time : defaultTime ?? "09:00"
@@ -83,7 +91,7 @@ export default function EventFormModal({
     e.preventDefault();
     const payload: EventCreatePayload | EventUpdatePayload = {
       title: title.trim(),
-      start_at: allDay ? `${date}T00:00:00` : toISOString(date, startTime),
+      start_at: allDay ? toISOString(date, "00:00") : toISOString(date, startTime),
       ...(endTime && !allDay ? { end_at: toISOString(date, endTime) } : {}),
       all_day: allDay,
       color,

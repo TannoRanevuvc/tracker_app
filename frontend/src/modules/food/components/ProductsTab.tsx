@@ -81,7 +81,7 @@ function AddProductModal({ open, onClose }: AddProductModalProps) {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
-          <motion.div className="absolute inset-0 bg-black/60" onClick={handleClose} />
+          <motion.div className="absolute inset-0 bg-neutral-950/60" onClick={handleClose} />
           <motion.div
             className="relative w-full max-w-md bg-brand-gray rounded-3xl p-6 flex flex-col gap-5"
             initial={{ y: 20, opacity: 0 }}

@@ -54,7 +54,7 @@ function AddBudgetModal({ open, onClose, period, categories }: AddBudgetModalPro
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
-          <motion.div className="absolute inset-0 bg-black/60" onClick={handleClose} />
+          <motion.div className="absolute inset-0 bg-neutral-950/60" onClick={handleClose} />
           <motion.div
             className="relative w-full max-w-md bg-brand-gray rounded-3xl p-6 flex flex-col gap-5"
             initial={{ y: 20, opacity: 0 }}
@@ -75,7 +75,7 @@ function AddBudgetModal({ open, onClose, period, categories }: AddBudgetModalPro
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
                   required
-                  className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 [color-scheme:dark]"
+                  className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                 >
                   {expenseCategories.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>

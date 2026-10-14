@@ -110,7 +110,7 @@ function AddRuleModal({ open, onClose, accounts, categories }: AddRuleModalProps
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
-          <motion.div className="absolute inset-0 bg-black/60" onClick={handleClose} />
+          <motion.div className="absolute inset-0 bg-neutral-950/60" onClick={handleClose} />
           <motion.div
             className="relative w-full max-w-md bg-brand-gray rounded-3xl p-6 flex flex-col gap-5 max-h-[90vh] overflow-y-auto"
             initial={{ y: 20, opacity: 0 }}
@@ -163,7 +163,7 @@ function AddRuleModal({ open, onClose, accounts, categories }: AddRuleModalProps
                   value={accountId}
                   onChange={(e) => setAccountId(e.target.value)}
                   required
-                  className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 [color-scheme:dark]"
+                  className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                 >
                   {accounts.map((a) => (
                     <option key={a.id} value={a.id}>{a.name}</option>
@@ -179,7 +179,7 @@ function AddRuleModal({ open, onClose, accounts, categories }: AddRuleModalProps
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 [color-scheme:dark]"
+                  className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                 >
                   <option value="">Без категории</option>
                   {filteredCategories.map((c) => (
@@ -218,7 +218,7 @@ function AddRuleModal({ open, onClose, accounts, categories }: AddRuleModalProps
                     value={dayOfMonth}
                     onChange={(e) => setDayOfMonth(e.target.value)}
                     required
-                    className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 [color-scheme:dark]"
+                    className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                   />
                 </div>
               )}
@@ -267,7 +267,7 @@ function AddRuleModal({ open, onClose, accounts, categories }: AddRuleModalProps
                   value={nextDueDate}
                   onChange={(e) => setNextDueDate(e.target.value)}
                   required
-                  className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 [color-scheme:dark]"
+                  className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                 />
               </div>
 

@@ -57,7 +57,7 @@ export default function TaskFormModal({
           transition={{ duration: 0.2 }}
         >
           <motion.div
-            className="absolute inset-0 bg-black/60"
+            className="absolute inset-0 bg-neutral-950/60"
             onClick={onClose}
           />
           <motion.div
@@ -139,7 +139,7 @@ export default function TaskFormModal({
                   type="date"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 [color-scheme:dark]"
+                  className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                 />
               </div>
 

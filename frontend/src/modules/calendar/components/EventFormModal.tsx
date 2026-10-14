@@ -102,7 +102,7 @@ export default function EventFormModal({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
-          <motion.div className="absolute inset-0 bg-black/60" onClick={onClose} />
+          <motion.div className="absolute inset-0 bg-neutral-950/60" onClick={onClose} />
           <motion.div
             className="relative w-full max-w-md bg-brand-gray rounded-3xl p-6 flex flex-col gap-5 max-h-[90vh] overflow-y-auto"
             initial={{ y: 20, opacity: 0 }}
@@ -162,7 +162,7 @@ export default function EventFormModal({
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   required
-                  className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 [color-scheme:dark]"
+                  className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                 />
               </div>
 
@@ -176,7 +176,7 @@ export default function EventFormModal({
                       value={startTime}
                       onChange={(e) => setStartTime(e.target.value)}
                       required
-                      className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 [color-scheme:dark]"
+                      className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                     />
                   </div>
                   <div className="flex flex-col gap-2 flex-1">
@@ -187,7 +187,7 @@ export default function EventFormModal({
                       type="time"
                       value={endTime}
                       onChange={(e) => setEndTime(e.target.value)}
-                      className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 [color-scheme:dark]"
+                      className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                     />
                   </div>
                 </div>

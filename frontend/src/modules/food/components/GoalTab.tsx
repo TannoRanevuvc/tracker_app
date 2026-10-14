@@ -126,7 +126,7 @@ export default function GoalTab() {
               value={effectiveFrom}
               onChange={(e) => setEffectiveFrom(e.target.value)}
               required
-              className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 [color-scheme:dark]"
+              className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
             />
           </div>
 

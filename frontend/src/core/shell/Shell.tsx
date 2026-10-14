@@ -1,7 +1,9 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Sun, Moon } from "lucide-react";
 import { apiClient } from "@/core/api-client";
 import { navItems } from "./nav";
+import { useTheme } from "./ThemeProvider";
 
 interface ModuleInfo {
   name: string;
@@ -9,6 +11,8 @@ interface ModuleInfo {
 }
 
 export default function Shell() {
+  const { theme, toggleTheme } = useTheme();
+
   const { data: modules = [] } = useQuery<ModuleInfo[]>({
     queryKey: ["core", "modules"],
     queryFn: () => apiClient.get<ModuleInfo[]>("/core/modules"),
@@ -22,12 +26,14 @@ export default function Shell() {
     enabledModuleIds.has(item.moduleId)
   );
 
+  const ThemeIcon = theme === "dark" ? Sun : Moon;
+
   return (
-    <div className="flex flex-col min-h-screen bg-black text-white antialiased font-sans selection:bg-white/30">
+    <div className="flex flex-col min-h-screen bg-black text-white antialiased font-sans selection:bg-white/20">
       {/* Desktop header */}
       <header className="hidden lg:flex bg-brand-gray px-4 py-3 items-center gap-6 shrink-0">
         <span className="font-semibold text-white">Tracker</span>
-        <nav className="flex gap-4">
+        <nav className="flex gap-4 flex-1">
           {visibleItems.map((item) => (
             <NavLink
               key={item.path}
@@ -42,14 +48,28 @@ export default function Shell() {
             </NavLink>
           ))}
         </nav>
+        <button
+          onClick={toggleTheme}
+          aria-label="Toggle theme"
+          className="p-1.5 rounded-lg text-white/60 hover:text-white/90 hover:bg-white/8 transition-colors"
+        >
+          <ThemeIcon size={18} strokeWidth={1.75} />
+        </button>
       </header>
 
-      {/* Mobile header — just the app name */}
-      <header className="lg:hidden bg-brand-gray px-4 py-3 flex items-center shrink-0">
+      {/* Mobile header */}
+      <header className="lg:hidden bg-brand-gray px-4 py-3 flex items-center justify-between shrink-0">
         <span className="font-semibold text-white">Tracker</span>
+        <button
+          onClick={toggleTheme}
+          aria-label="Toggle theme"
+          className="p-1.5 rounded-lg text-white/60 hover:text-white/90 hover:bg-white/8 transition-colors"
+        >
+          <ThemeIcon size={18} strokeWidth={1.75} />
+        </button>
       </header>
 
-      {/* Content — extra bottom padding on mobile for the tab bar */}
+      {/* Content */}
       <main className="flex-1 p-2 lg:p-4 pb-24 lg:pb-4">
         <Outlet />
       </main>

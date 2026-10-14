@@ -1,16 +1,62 @@
 @import "tailwindcss";
 
+/* ─── Base font ──────────────────────────────────────────────── */
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --color-brand-gray: #1a1a1a;
 }
 
+/* ─── Theme tokens ───────────────────────────────────────────── */
+/*
+ * black  → page background
+ * white  → foreground / primary text
+ * brand-gray → surface (header, cards, modals)
+ *
+ * By remapping these three, every existing class that references
+ * bg-black / text-white / bg-brand-gray switches themes for free.
+ * Opacity modifiers (/40, /60, /8 …) continue to work via color-mix.
+ */
+@theme inline {
+  --color-black: var(--t-bg);
+  --color-white: var(--t-fg);
+  --color-brand-gray: var(--t-surface);
+}
+
+/* Dark theme — default */
+:root {
+  --t-bg: #09090b;       /* zinc-950 */
+  --t-surface: #18181b;  /* zinc-900 */
+  --t-fg: #fafafa;       /* zinc-50  */
+}
+
+/* Light theme */
+:root.light {
+  --t-bg: #f4f4f5;       /* zinc-100 */
+  --t-surface: #ffffff;  /* white    */
+  --t-fg: #18181b;       /* zinc-900 */
+}
+
+/* ─── Native date / time / select pickers ────────────────────── */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+select {
+  color-scheme: dark;
+}
+
+:root.light input[type="date"],
+:root.light input[type="time"],
+:root.light input[type="datetime-local"],
+:root.light select {
+  color-scheme: light;
+}
+
+/* ─── Base layer ─────────────────────────────────────────────── */
 @layer base {
   body {
     @apply bg-black text-white antialiased font-sans;
   }
 
   ::selection {
-    @apply bg-white/30;
+    @apply bg-white/20;
   }
 }

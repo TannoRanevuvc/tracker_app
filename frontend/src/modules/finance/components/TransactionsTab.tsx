@@ -94,7 +94,7 @@ function AddTransactionModal({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
-          <motion.div className="absolute inset-0 bg-black/60" onClick={handleClose} />
+          <motion.div className="absolute inset-0 bg-neutral-950/60" onClick={handleClose} />
           <motion.div
             className="relative w-full max-w-md bg-brand-gray rounded-3xl p-6 flex flex-col gap-5"
             initial={{ y: 20, opacity: 0 }}
@@ -147,7 +147,7 @@ function AddTransactionModal({
                   value={accountId}
                   onChange={(e) => setAccountId(e.target.value)}
                   required
-                  className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 [color-scheme:dark]"
+                  className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                 >
                   {accounts.map((a) => (
                     <option key={a.id} value={a.id}>{a.name}</option>
@@ -163,7 +163,7 @@ function AddTransactionModal({
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 [color-scheme:dark]"
+                  className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                 >
                   <option value="">Без категории</option>
                   {filteredCategories.map((c) => (
@@ -180,7 +180,7 @@ function AddTransactionModal({
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   required
-                  className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 [color-scheme:dark]"
+                  className="bg-black/40 rounded-xl h-11 px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                 />
               </div>
 

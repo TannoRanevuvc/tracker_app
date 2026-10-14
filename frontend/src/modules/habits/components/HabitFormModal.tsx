@@ -59,7 +59,7 @@ export default function HabitFormModal({
           transition={{ duration: 0.2 }}
         >
           <motion.div
-            className="absolute inset-0 bg-black/60"
+            className="absolute inset-0 bg-neutral-950/60"
             onClick={onClose}
           />
           <motion.div

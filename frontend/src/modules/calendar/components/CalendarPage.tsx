@@ -54,6 +54,7 @@ export default function CalendarPage() {
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [defaultDate, setDefaultDate] = useState<string | undefined>();
   const [defaultTime, setDefaultTime] = useState<string | undefined>();
+  const [defaultEndTime, setDefaultEndTime] = useState<string | undefined>();
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -140,13 +141,14 @@ export default function CalendarPage() {
     setView("day");
   }
 
-  function handleSlotClick(time: string) {
+  function handleSlotClick(startTime: string, endTime?: string) {
     if (!selectedDay) return;
     const d = selectedDay;
     setDefaultDate(
       `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
     );
-    setDefaultTime(time);
+    setDefaultTime(startTime);
+    setDefaultEndTime(endTime);
     setEditingEvent(null);
     setModalOpen(true);
   }
@@ -170,9 +172,11 @@ export default function CalendarPage() {
         `${selectedDay.getFullYear()}-${pad(selectedDay.getMonth() + 1)}-${pad(selectedDay.getDate())}`
       );
       setDefaultTime("09:00");
+      setDefaultEndTime(undefined);
     } else {
       setDefaultDate(undefined);
       setDefaultTime(undefined);
+      setDefaultEndTime(undefined);
     }
     setModalOpen(true);
   }
@@ -295,6 +299,7 @@ export default function CalendarPage() {
         initialData={editingEvent ?? undefined}
         defaultDate={defaultDate}
         defaultTime={defaultTime}
+        defaultEndTime={defaultEndTime}
         loading={createEvent.isPending || updateEvent.isPending || deleteEvent.isPending}
         error={mutationError}
       />

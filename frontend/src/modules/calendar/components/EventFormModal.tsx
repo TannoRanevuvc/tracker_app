@@ -12,6 +12,7 @@ interface Props {
   initialData?: CalendarEvent;
   defaultDate?: string;
   defaultTime?: string;
+  defaultEndTime?: string;
   loading?: boolean;
   error?: string;
 }
@@ -44,6 +45,7 @@ export default function EventFormModal({
   initialData,
   defaultDate,
   defaultTime,
+  defaultEndTime,
   loading,
   error,
 }: Props) {
@@ -59,7 +61,7 @@ export default function EventFormModal({
 
   const initEndTime = initialData?.end_at
     ? toLocalDatetimeValue(initialData.end_at).time
-    : "";
+    : defaultEndTime ?? "";
 
   const [title, setTitle] = useState(initialData?.title ?? "");
   const [description, setDescription] = useState(initialData?.description ?? "");
@@ -81,7 +83,7 @@ export default function EventFormModal({
       setStartTime(
         initialData ? toLocalDatetimeValue(initialData.start_at).time : defaultTime ?? "09:00"
       );
-      setEndTime(initialData?.end_at ? toLocalDatetimeValue(initialData.end_at).time : "");
+      setEndTime(initialData?.end_at ? toLocalDatetimeValue(initialData.end_at).time : defaultEndTime ?? "");
       setAllDay(initialData?.all_day ?? false);
       setColor(initialData?.color ?? DEFAULT_EVENT_COLOR);
     }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import type { CalendarItem } from "../types";
 
 const HOUR_HEIGHT = 28;
@@ -75,7 +75,7 @@ function layoutItems(items: CalendarItem[]): PositionedItem[] {
 interface Props {
   day: Date;
   items: CalendarItem[];
-  onSlotClick: (time: string) => void;
+  onSlotClick: (startTime: string, endTime?: string) => void;
   onEventClick: (item: CalendarItem) => void;
 }
 
@@ -102,6 +102,38 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
     return () => cancelAnimationFrame(id);
   }, [day.toDateString()]);
 
+  const [drag, setDrag] = useState<{ startMin: number; endMin: number } | null>(null);
+
+  const minsFromClientY = useCallback((clientY: number): number => {
+    const el = scrollRef.current;
+    if (!el) return 0;
+    const rect = el.getBoundingClientRect();
+    const relY = clientY - rect.top + el.scrollTop;
+    const raw = (relY / HOUR_HEIGHT) * 60;
+    return Math.max(0, Math.min(24 * 60 - 15, Math.round(raw / 15) * 15));
+  }, []);
+
+  function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if ((e.target as HTMLElement).closest("button")) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const mins = minsFromClientY(e.clientY);
+    setDrag({ startMin: mins, endMin: mins + 15 });
+  }
+
+  function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!drag) return;
+    const mins = minsFromClientY(e.clientY);
+    setDrag((d) => d && { ...d, endMin: Math.max(d.startMin + 15, mins) });
+  }
+
+  function handlePointerUp() {
+    if (!drag) return;
+    const { startMin, endMin } = drag;
+    setDrag(null);
+    const fmt = (m: number) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+    onSlotClick(fmt(startMin), fmt(endMin));
+  }
+
   const allDayItems = items.filter((i) => i.all_day);
   const positioned = layoutItems(items);
 
@@ -110,15 +142,6 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
     nowMinutes !== null
       ? `${pad(Math.floor(nowMinutes / 60))}:${pad(nowMinutes % 60)}`
       : null;
-
-  function handleGridClick(e: React.MouseEvent<HTMLDivElement>) {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const y = e.clientY - rect.top + (scrollRef.current?.scrollTop ?? 0);
-    const totalMins = Math.floor((y / HOUR_HEIGHT) * 60);
-    const h = Math.floor(totalMins / 60);
-    const m = Math.floor(totalMins / 30) % 2 === 0 ? 0 : 30;
-    onSlotClick(`${pad(h)}:${pad(m)}`);
-  }
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
@@ -159,7 +182,10 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
         <div
           className="relative select-none"
           style={{ height: HOUR_HEIGHT * 24 }}
-          onClick={handleGridClick}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={() => setDrag(null)}
         >
           {/* Hour lines + labels */}
           {HOURS.map((hour) => (
@@ -204,11 +230,6 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
             />
           ))}
 
-          {/* Clickable grid overlay */}
-          <div
-            className="absolute inset-y-0 cursor-pointer"
-            style={{ left: COL_W, right: 0 }}
-          />
 
           {/* Current time indicator */}
           {nowTop !== null && nowLabel !== null && (
@@ -228,6 +249,21 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
               {/* Line */}
               <div className="flex-1 h-px bg-red-400" />
             </div>
+          )}
+
+          {/* Drag selection */}
+          {drag && (
+            <div
+              className="absolute rounded pointer-events-none z-10"
+              style={{
+                top: (drag.startMin / 60) * HOUR_HEIGHT,
+                height: ((drag.endMin - drag.startMin) / 60) * HOUR_HEIGHT,
+                left: COL_W,
+                right: 0,
+                backgroundColor: "rgba(59,130,246,0.25)",
+                border: "1.5px solid rgba(59,130,246,0.7)",
+              }}
+            />
           )}
 
           {/* Event blocks */}

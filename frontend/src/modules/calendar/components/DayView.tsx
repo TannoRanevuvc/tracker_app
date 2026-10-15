@@ -1,8 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CalendarItem } from "../types";
 
-const HOUR_HEIGHT = 56;   // px per hour (Google Calendar default zoom)
-const COL_W = 52;         // width of the time-label column in px
+const HOUR_HEIGHT = 56;
+const COL_W = 26;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const HALF_HOURS = Array.from({ length: 24 }, (_, i) => i);
 
@@ -89,17 +89,17 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
     return () => clearInterval(id);
   }, [day.toDateString()]);
 
-  // useLayoutEffect: runs after DOM commit, before paint — flex layout already resolved
-  useLayoutEffect(() => {
+  useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const mins = getNowMinutes(day);
-    if (mins !== null) {
-      // Show current time with ~2.5 h of context above (Google Calendar style)
-      el.scrollTop = Math.max(0, (mins / 60 - 2.5) * HOUR_HEIGHT);
-    } else {
-      el.scrollTop = 8 * HOUR_HEIGHT;
-    }
+    // Scroll to end of day on open
+    const target = HOUR_HEIGHT * 24;
+    let id = requestAnimationFrame(() => {
+      id = requestAnimationFrame(() => {
+        el.scrollTop = target;
+      });
+    });
+    return () => cancelAnimationFrame(id);
   }, [day.toDateString()]);
 
   const allDayItems = items.filter((i) => i.all_day);

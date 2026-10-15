@@ -29,7 +29,7 @@ export default function Shell() {
   const ThemeIcon = theme === "dark" ? Sun : Moon;
 
   return (
-    <div className="flex flex-col min-h-screen bg-black text-white antialiased font-sans selection:bg-white/20">
+    <div className="flex flex-col h-screen overflow-hidden bg-black text-white antialiased font-sans selection:bg-white/20">
       {/* Desktop header */}
       <header className="hidden lg:flex bg-brand-gray px-4 py-3 items-center gap-6 shrink-0">
         <span className="font-semibold text-white">Tracker</span>
@@ -70,7 +70,7 @@ export default function Shell() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 p-2 lg:p-4 pb-24 lg:pb-4">
+      <main className="flex-1 min-h-0 overflow-y-auto p-2 lg:p-4 pb-24 lg:pb-4">
         <Outlet />
       </main>
 

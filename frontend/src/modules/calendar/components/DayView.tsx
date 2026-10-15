@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { CalendarItem } from "../types";
 
-const HOUR_HEIGHT = 56;
-const COL_W = 26;
+const HOUR_HEIGHT = 28;
+const COL_W = 52;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const HALF_HOURS = Array.from({ length: 24 }, (_, i) => i);
 

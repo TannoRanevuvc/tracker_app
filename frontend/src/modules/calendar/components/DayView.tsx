@@ -103,6 +103,8 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
   }, [day.toDateString()]);
 
   const [drag, setDrag] = useState<{ startMin: number; endMin: number } | null>(null);
+  const dragRef = useRef(drag);
+  useEffect(() => { dragRef.current = drag; }, [drag]);
 
   const minsFromClientY = useCallback((clientY: number): number => {
     const el = scrollRef.current;
@@ -113,7 +115,87 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
     return Math.max(0, Math.min(24 * 60 - 15, Math.round(raw / 15) * 15));
   }, []);
 
+  // touch-action:none blocks native scroll on mobile → implement manually
+  // Long-press (200ms without significant movement) initiates drag on touch
+  const gridRef = useRef<HTMLDivElement>(null);
+  const onSlotClickRef = useRef(onSlotClick);
+  useEffect(() => { onSlotClickRef.current = onSlotClick; }, [onSlotClick]);
+
+  useEffect(() => {
+    const grid = gridRef.current;
+    const scroll = scrollRef.current;
+    if (!grid || !scroll) return;
+
+    let startY = 0;
+    let lastY = 0;
+    let longPressId: ReturnType<typeof setTimeout> | null = null;
+    let touchMode: "pending" | "scrolling" | "dragging" = "pending";
+
+    const minsFromY = (clientY: number) => {
+      const rect = scroll.getBoundingClientRect();
+      const relY = clientY - rect.top + scroll.scrollTop;
+      const raw = (relY / HOUR_HEIGHT) * 60;
+      return Math.max(0, Math.min(24 * 60 - 15, Math.round(raw / 15) * 15));
+    };
+    const fmt = (m: number) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if ((e.target as HTMLElement).closest("button")) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      startY = lastY = t.clientY;
+      touchMode = "pending";
+      longPressId = setTimeout(() => {
+        touchMode = "dragging";
+        const mins = minsFromY(startY);
+        setDrag({ startMin: mins, endMin: mins + 15 });
+      }, 200);
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      const y = e.touches[0].clientY;
+      const dy = Math.abs(y - startY);
+      if (touchMode === "pending") {
+        if (dy > 8) {
+          clearTimeout(longPressId!);
+          touchMode = "scrolling";
+        }
+      }
+      if (touchMode === "scrolling") {
+        scroll.scrollTop -= y - lastY;
+      } else if (touchMode === "dragging") {
+        const mins = minsFromY(y);
+        setDrag((d) => d && { ...d, endMin: Math.max(d.startMin + 15, mins) });
+      }
+      lastY = y;
+    };
+
+    const onTouchEnd = () => {
+      clearTimeout(longPressId!);
+      if (touchMode === "dragging") {
+        setDrag((d) => {
+          if (d) onSlotClickRef.current(fmt(d.startMin), fmt(d.endMin));
+          return null;
+        });
+      }
+      touchMode = "pending";
+    };
+
+    grid.addEventListener("touchstart", onTouchStart, { passive: false });
+    grid.addEventListener("touchmove", onTouchMove, { passive: false });
+    grid.addEventListener("touchend", onTouchEnd);
+    grid.addEventListener("touchcancel", onTouchEnd);
+    return () => {
+      grid.removeEventListener("touchstart", onTouchStart);
+      grid.removeEventListener("touchmove", onTouchMove);
+      grid.removeEventListener("touchend", onTouchEnd);
+      grid.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, []);
+
+  // Mouse drag
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.pointerType !== "mouse") return;
     if ((e.target as HTMLElement).closest("button")) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     const mins = minsFromClientY(e.clientY);
@@ -121,7 +203,7 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
   }
 
   function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
-    if (!drag) return;
+    if (e.pointerType !== "mouse" || !drag) return;
     const mins = minsFromClientY(e.clientY);
     setDrag((d) => d && { ...d, endMin: Math.max(d.startMin + 15, mins) });
   }
@@ -180,8 +262,9 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
       {/* Time grid */}
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
         <div
+          ref={gridRef}
           className="relative select-none"
-          style={{ height: HOUR_HEIGHT * 24 }}
+          style={{ height: HOUR_HEIGHT * 24, touchAction: "none" }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}

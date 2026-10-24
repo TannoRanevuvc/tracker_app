@@ -3,6 +3,7 @@ import ProtectedRoute from "@/core/auth/ProtectedRoute";
 import LoginPage from "@/core/auth/LoginPage";
 import RegisterPage from "@/core/auth/RegisterPage";
 import Shell from "@/core/shell/Shell";
+import SettingsPage from "@/core/settings/SettingsPage";
 import { habitsRoutes } from "@/modules/habits/routes";
 import { tasksRoutes } from "@/modules/tasks/routes";
 import { motivationRoutes } from "@/modules/motivation/routes";
@@ -20,7 +21,8 @@ const router = createBrowserRouter([
       {
         element: <Shell />,
         children: [
-          { index: true, element: <Navigate to="/habits" replace /> },
+          { index: true, element: <Navigate to="/calendar" replace /> },
+          { path: "settings", element: <SettingsPage /> },
           ...habitsRoutes,
           ...tasksRoutes,
           ...motivationRoutes,

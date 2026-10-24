@@ -8,11 +8,16 @@ export interface NavItem {
   icon: LucideIcon;
 }
 
-export const navItems: NavItem[] = [
-  { label: "Привычки",  path: "/habits",     moduleId: "habits",     icon: CheckSquare },
+export const primaryNavItems: NavItem[] = [
+  { label: "Календарь", path: "/calendar",   moduleId: "calendar",   icon: CalendarDays },
   { label: "Задачи",    path: "/tasks",      moduleId: "tasks",      icon: ListTodo },
+  { label: "Привычки",  path: "/habits",     moduleId: "habits",     icon: CheckSquare },
+];
+
+export const secondaryNavItems: NavItem[] = [
   { label: "Финансы",   path: "/finance",    moduleId: "finance",    icon: Wallet },
   { label: "Питание",   path: "/food",       moduleId: "food",       icon: Salad },
   { label: "Мотивация", path: "/motivation", moduleId: "motivation", icon: Flame },
-  { label: "Календарь", path: "/calendar",   moduleId: "calendar",   icon: CalendarDays },
 ];
+
+export const navItems: NavItem[] = [...primaryNavItems, ...secondaryNavItems];

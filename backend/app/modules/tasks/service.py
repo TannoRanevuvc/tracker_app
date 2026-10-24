@@ -118,12 +118,15 @@ class TaskService:
         status_filter: Optional[str] = None,
         tag: Optional[str] = None,
         overdue_only: bool = False,
+        due_today: bool = False,
     ) -> list[Task]:
         q = select(Task).where(Task.user_id == user_id)
         if status_filter is not None:
             q = q.where(Task.status == status_filter)
         if tag is not None:
             q = q.where(Task.tag == tag)
+        if due_today:
+            q = q.where(Task.due_date == date.today())
         result = await self.session.execute(q)
         tasks = [await self._enrich(t) for t in result.scalars().all()]
         if overdue_only:

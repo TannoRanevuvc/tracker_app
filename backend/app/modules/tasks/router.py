@@ -52,12 +52,14 @@ async def list_tasks(
     status: Optional[str] = Query(default=None),
     tag: Optional[str] = Query(default=None),
     overdue_only: bool = Query(default=False),
+    due_today: bool = Query(default=False),
 ):
     return await svc.list_tasks(
         user_id=user_id,
         status_filter=status,
         tag=tag,
         overdue_only=overdue_only,
+        due_today=due_today,
     )
 
 

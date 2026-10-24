@@ -134,6 +134,14 @@ async def refresh(
     return {}
 
 
+@router.post("/widget-token")
+async def get_widget_token(
+    current_user_id: uuid.UUID = Depends(get_current_user_id),
+) -> dict:
+    token = create_access_token(current_user_id, expires_delta=timedelta(days=365))
+    return {"token": token}
+
+
 @router.get("/me", response_model=UserResponse)
 async def me(
     current_user_id: uuid.UUID = Depends(get_current_user_id),

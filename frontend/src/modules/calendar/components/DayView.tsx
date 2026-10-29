@@ -238,21 +238,32 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
               key={item.id}
               onClick={() => onEventClick(item)}
               className="text-xs rounded-md px-2 py-1 text-left font-medium transition-opacity hover:opacity-80"
-              style={{
-                backgroundColor:
-                  item.source === "task"
-                    ? "rgba(107,114,128,0.2)"
-                    : `${item.color ?? "#3b82f6"}30`,
-                color: item.source === "task" ? "#9ca3af" : (item.color ?? "#3b82f6"),
-                border:
-                  item.source === "task"
-                    ? "1px dashed rgba(107,114,128,0.5)"
-                    : `1px solid ${item.color ?? "#3b82f6"}60`,
-              }}
+              style={
+                item.source === "task"
+                  ? {
+                      backgroundColor: "rgba(107,114,128,0.2)",
+                      color: "#9ca3af",
+                      border: "1px dashed rgba(107,114,128,0.5)",
+                    }
+                  : item.source === "note"
+                  ? {
+                      backgroundColor: `${item.color ?? "#eab308"}20`,
+                      color: item.color ?? "#eab308",
+                      border: `1px dashed ${item.color ?? "#eab308"}70`,
+                    }
+                  : {
+                      backgroundColor: `${item.color ?? "#3b82f6"}30`,
+                      color: item.color ?? "#3b82f6",
+                      border: `1px solid ${item.color ?? "#3b82f6"}60`,
+                    }
+              }
             >
               {item.title}
               {item.source === "task" && (
                 <span className="ml-1 opacity-50">· задача</span>
+              )}
+              {item.source === "note" && (
+                <span className="ml-1 opacity-50">· заметка</span>
               )}
             </button>
           ))}
@@ -352,6 +363,11 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
           {/* Event blocks */}
           {positioned.map(({ item, top, height, column, totalColumns }) => {
             const isTask = item.source === "task";
+            const isNote = item.source === "note";
+            const isClickable = !isTask && !isNote;
+            const accent = isTask
+              ? "rgba(107,114,128,0.5)"
+              : (item.color ?? (isNote ? "#eab308" : "#3b82f6"));
             const gridW = `calc(100% - ${COL_W}px)`;
             const colW = `calc(${gridW} / ${totalColumns} - 2px)`;
             const left = `calc(${COL_W}px + ${column} * ${gridW} / ${totalColumns} + 1px)`;
@@ -361,10 +377,10 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
                 key={item.id}
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (!isTask) onEventClick(item);
+                  if (isClickable) onEventClick(item);
                 }}
                 className={`absolute rounded px-2 py-1 text-left overflow-hidden transition-opacity ${
-                  isTask ? "cursor-default" : "hover:opacity-80 cursor-pointer"
+                  isClickable ? "hover:opacity-80 cursor-pointer" : "cursor-default"
                 }`}
                 style={{
                   top: top + 1,
@@ -373,9 +389,10 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
                   width: colW,
                   backgroundColor: isTask
                     ? "rgba(107,114,128,0.15)"
-                    : `${item.color ?? "#3b82f6"}25`,
-                  borderLeft: `3px solid ${isTask ? "rgba(107,114,128,0.5)" : (item.color ?? "#3b82f6")}`,
-                  color: isTask ? "#9ca3af" : (item.color ?? "#3b82f6"),
+                    : `${accent}25`,
+                  borderLeft: `3px solid ${accent}`,
+                  borderStyle: isNote ? "dashed" : "solid",
+                  color: isTask ? "#9ca3af" : accent,
                 }}
               >
                 <p className="text-[11px] font-semibold leading-tight truncate">{item.title}</p>
@@ -383,7 +400,7 @@ export default function DayView({ day, items, onSlotClick, onEventClick }: Props
                   <p className="text-[10px] opacity-70 leading-tight mt-0.5">
                     {formatTime(item.start_at)}
                     {item.end_at ? ` – ${formatTime(item.end_at)}` : ""}
-                    {isTask ? " · задача" : ""}
+                    {isTask ? " · задача" : isNote ? " · заметка" : ""}
                   </p>
                 )}
               </button>

@@ -35,7 +35,7 @@ export interface CalendarItem {
   end_at?: string;
   all_day: boolean;
   color?: string;
-  source: "calendar" | "task";
+  source: "calendar" | "task" | "note";
 }
 
 export const COLOR_PRESETS = [

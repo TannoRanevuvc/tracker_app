@@ -6,6 +6,7 @@ import EventFormModal from "./EventFormModal";
 import {
   useCalendarEvents,
   useTasksForCalendar,
+  useNotesForCalendar,
   useCreateEvent,
   useUpdateEvent,
   useDeleteEvent,
@@ -71,6 +72,7 @@ export default function CalendarPage() {
     dayRange?.end ?? ""
   );
   const tasksQuery = useTasksForCalendar();
+  const notesQuery = useNotesForCalendar();
 
   const createEvent = useCreateEvent();
   const updateEvent = useUpdateEvent(editingEvent?.id ?? "");
@@ -87,8 +89,8 @@ export default function CalendarPage() {
         color: e.color,
         source: "calendar" as const,
       })) ?? [];
-    return [...calItems, ...(tasksQuery.data ?? [])];
-  }, [eventsQuery.data, tasksQuery.data]);
+    return [...calItems, ...(tasksQuery.data ?? []), ...(notesQuery.data ?? [])];
+  }, [eventsQuery.data, tasksQuery.data, notesQuery.data]);
 
   const dayItems: CalendarItem[] = useMemo(() => {
     if (!selectedDay) return [];
@@ -106,8 +108,11 @@ export default function CalendarPage() {
     const taskItems = (tasksQuery.data ?? []).filter((t) =>
       t.start_at.startsWith(dayStr)
     );
-    return [...calItems, ...taskItems];
-  }, [dayEventsQuery.data, tasksQuery.data, selectedDay?.toDateString()]);
+    const noteItems = (notesQuery.data ?? []).filter((n) =>
+      n.start_at.startsWith(dayStr)
+    );
+    return [...calItems, ...taskItems, ...noteItems];
+  }, [dayEventsQuery.data, tasksQuery.data, notesQuery.data, selectedDay?.toDateString()]);
 
   function prevPeriod() {
     if (view === "month") {

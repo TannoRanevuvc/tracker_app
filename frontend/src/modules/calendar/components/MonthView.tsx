@@ -119,15 +119,24 @@ export default function MonthView({ year, month, items, selectedDay, onDayClick 
                   <div
                     key={item.id}
                     className="text-[10px] leading-tight rounded px-1 py-0.5 truncate font-medium"
-                    style={{
-                      backgroundColor: item.source === "task"
-                        ? "rgba(107,114,128,0.3)"
-                        : `${item.color ?? "#3b82f6"}80`,
-                      color: item.source === "task" ? "#9ca3af" : (item.color ?? "#3b82f6"),
-                      border: item.source === "task"
-                        ? "1px solid rgba(107,114,128,0.4)"
-                        : "none",
-                    }}
+                    style={
+                      item.source === "task"
+                        ? {
+                            backgroundColor: "rgba(107,114,128,0.3)",
+                            color: "#9ca3af",
+                            border: "1px solid rgba(107,114,128,0.4)",
+                          }
+                        : item.source === "note"
+                        ? {
+                            backgroundColor: `${item.color ?? "#eab308"}30`,
+                            color: item.color ?? "#eab308",
+                            border: `1px dashed ${item.color ?? "#eab308"}80`,
+                          }
+                        : {
+                            backgroundColor: `${item.color ?? "#3b82f6"}80`,
+                            color: item.color ?? "#3b82f6",
+                          }
+                    }
                   >
                     {item.title}
                   </div>

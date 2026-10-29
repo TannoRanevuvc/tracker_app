@@ -40,6 +40,36 @@ export function useTasksForCalendar() {
   });
 }
 
+interface RawNote {
+  id: string;
+  title: string;
+  pinned_at?: string;
+  color?: string;
+}
+
+export function useNotesForCalendar() {
+  return useQuery<CalendarItem[]>({
+    queryKey: ["notes", { archived: false, hasPin: true }],
+    queryFn: async () => {
+      const notes = await apiClient.get<RawNote[]>("/notes?archived=false&has_pin=true");
+      return notes
+        .filter((n) => !!n.pinned_at)
+        .map((n) => {
+          const d = new Date(n.pinned_at!);
+          const isAllDay = d.getHours() === 0 && d.getMinutes() === 0;
+          return {
+            id: n.id,
+            title: n.title,
+            start_at: n.pinned_at!,
+            all_day: isAllDay,
+            color: n.color ?? "#eab308",
+            source: "note" as const,
+          };
+        });
+    },
+  });
+}
+
 export function useCreateEvent() {
   const qc = useQueryClient();
   return useMutation<CalendarEvent, Error, EventCreatePayload>({

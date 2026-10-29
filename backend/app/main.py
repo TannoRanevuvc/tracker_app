@@ -10,6 +10,7 @@ from app.modules.finance.router import router as finance_router
 from app.modules.food.router import router as food_router
 from app.modules.motivation.router import router as motivation_router
 from app.modules.calendar.router import router as calendar_router
+from app.modules.notes.router import router as notes_router
 
 import app.modules.habits.events as habits_events
 import app.modules.tasks.events as tasks_events
@@ -17,6 +18,7 @@ import app.modules.finance.events as finance_events
 import app.modules.food.events as food_events
 import app.modules.motivation.events as motivation_events
 import app.modules.calendar.events as calendar_events  # noqa: F401
+import app.modules.notes.events as notes_events  # noqa: F401
 
 app = FastAPI(title="tracker-app")
 
@@ -28,6 +30,7 @@ app.include_router(finance_router)
 app.include_router(food_router)
 app.include_router(motivation_router)
 app.include_router(calendar_router)
+app.include_router(notes_router)
 
 
 # Регистрируем обработчики входящих событий для модуля tasks
